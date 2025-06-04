@@ -1,0 +1,4 @@
+com/example/App.class
+com/example/EventSpec.class
+com/example/CloudEventConsumer.class
+com/example/PersonWorker.class

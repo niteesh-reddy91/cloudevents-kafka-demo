@@ -1,0 +1,32 @@
+{
+    // CloudEvent Default Props
+    "specversion": "1.0",
+    "id": "84a10ef0-8702-4a5b-a5fc-99a1ebb8c7fd",
+    "source": "/alight/udp/personworker", // a URI for alight source. Can be a string combining env prefix (dev, prod, stage), name of the producer service, and may be the container id
+    "type": "com.alight.udp.personworker.upsert",
+    "datacontenttype": "application/json; charset=utf-8",
+    "time": "2025-06-02T14:48:09.085936-05:00",
+    "subject": "PersonWorkerUpsert",
+
+    // Custom Alight Props
+    // Placeholder for generic fields that
+        // 1. describe the type of event
+        // 2. allow for validations/routing to be done without looking at the message data
+    "alightclientId": "00095", // a tenant id, an alight client
+    "alightschemaname": "personworker", 
+    "alightplaforminternalid": "abc123",
+    "alighttopic": "Person_Update",
+    "alightsubtopic": "PersonWorker",
+    "alightsourcesystemextractiontimestamp": "2025-06-02T14:48:09Z",
+    "alightsourcesystemreferenceid": "abc1232025-06-02T14:48:09Z",
+    "alightbodyversion": "2.11",
+
+    // Message Content
+    "data": {
+        "person": {
+            "firstName": "John",
+            "lastName": "Doe"
+        }
+        // other top-level properties as needed (ex: payroll, benefitsWorkerAttributes etc)
+    }
+  }
