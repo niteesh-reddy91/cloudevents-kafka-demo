@@ -4,7 +4,7 @@
     "id": "84a10ef0-8702-4a5b-a5fc-99a1ebb8c7fd",
     "source": "/example/udp/personworker", // Can be a string combining env prefix (dev, prod, stage), name of the producer service, and may be the container id
     "type": "com.example.udp.personworker.upsert",
-    "datacontenttype": "application/json; charset=utf-8",
+    "datacontenttype": "application/avro",
     "time": "2025-06-02T14:48:09.085936-05:00",
     "subject": "PersonWorkerUpsert",
 

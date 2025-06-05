@@ -4,25 +4,32 @@
     "id": "84a10ef0-8702-4a5b-a5fc-99a1ebb8c7fd", // unique id for the message
     "source": "/<env>/<producer-service>/<container-id>", // a URI for an internal source. Can be a string combining env prefix (dev, prod, stage), name of the producer service, and may be the container id
     "type": "PERSON_CREATED", // PERSON_UPDATED, PERSON_DELETED etc
-    "datacontenttype": "application/json; charset=utf-8", // can be application/avro too
+    "datacontenttype": "application/avro",
     "time": "2025-06-02T14:48:09.085936-05:00", // timestamp of when the producer created it
 
     // Custom Props
     // Placeholder for generic fields that
         // 1. describe the type of event
         // 2. allow for validations/routing to be done without looking at the message data
-    "clientId": "00095", // a tenant id, an internal client
     "topic": "Person", // name of topic or domain
     "sourceplatform": "Workday", // Workday, TBA, CBA etc
     "sourceplaformid": "aaa111", // Platform internal id from current UDP schema
     "globalid": "abc123", // gupi in case of person domain. Only needed if this id is available. Can be skipped otherwise.
-    "bodyversion": "2.11", // indicates the version of the event spec <majorrelease>.<minorrelease>.<patch>
+    "clientId": "00095", // a tenant id, an internal client
 
     // Message Content
     "data": {
         "person": {
-            "firstName": "John",
-            "lastName": "Doe"
+            "firstName": "John", // required
+            "middleName": "Optional",
+            "lastName": "Doe", // required
+            "suffix": "Jr.",
+            "prefix": "Mr.", // title
+            "birthDate": "1970-01-01",
+            "deceasedDate": "2020-01-01",
+            "sex": "M",
+            "legalName": "Mr. John O. Doe Jr.",
+            "maritalStatus": "Single"
             // copy other properties from Person schema
         }
         // other top-level properties as needed (ex: payroll, benefitsWorkerAttributes etc)
