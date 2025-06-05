@@ -1,0 +1,32 @@
+[
+  {
+    "type": "record",
+    "name": "CloudEventEnvelope",
+    "namespace": "com.example",
+    "fields": [
+      { "name": "id", "type": "string" },
+      { "name": "source", "type": "string" },
+      { "name": "type", "type": "string" },
+      { "name": "subject", "type": "string" },
+      { "name": "time", "type": "string" },
+      { "name": "clientid", "type": "string" },
+      { "name": "topic", "type": "string" },
+      {
+        "name": "data",
+        "type": [
+            "null",
+            {
+                "type": "record",
+                "name": "PersonWorker",
+                "namespace": "com.example",
+                "fields": [
+                    { "name": "firstName", "type": "string" },
+                    { "name": "lastName", "type": "string" }
+                ]
+            }
+        ],
+        "default": null
+      }
+    ]
+  }
+]

@@ -96,40 +96,8 @@ public class EventSpec<T> {
 
     // Validation logic
     public boolean isValid() {
-        return clientId != null && !clientId.isBlank() &&
-               schemaName != null && !schemaName.isBlank() &&
+        return clientId != null && !clientId.trim().isEmpty() &&
+               schemaName != null && !schemaName.trim().isEmpty() &&
                data != null;
-    }
-
-    // Convert to CloudEvent for producing
-    public CloudEvent toCloudEvent() {
-        byte[] dataBytes = null;
-        if (data != null) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                dataBytes = mapper.writeValueAsBytes(data);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-                dataBytes = null;
-            }
-        }
-
-        return CloudEventBuilder.v1()
-            .withId(id)
-            .withType(type)
-            .withSource(source)
-            .withTime(time)
-            .withSubject(subject)
-            .withDataContentType(contentType)
-            .withExtension("alightclientid", clientId)
-            .withExtension("alightschemaname", schemaName)
-            .withExtension("alightplatforminternalid", platformId)
-            .withExtension("alighttopic", topic)
-            .withExtension("alightsubtopic", subtopic)
-            .withExtension("alightsourcesystemextractiontimestamp", extractionTimestamp)
-            .withExtension("alightsourcesystemreferenceid", referenceId)
-            .withExtension("alightbodyversion", bodyVersion)
-            .withData(dataBytes)
-            .build();
     }
 }
