@@ -73,6 +73,11 @@ services:
       # Additional timeout and retry settings
       SCHEMA_REGISTRY_KAFKASTORE_TIMEOUT_MS: 10000
       SCHEMA_REGISTRY_KAFKASTORE_INIT_TIMEOUT_MS: 60000
+
+      # Add CORS support for allowing async API 
+      SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
+      SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_ORIGIN: "*"
+      SCHEMA_REGISTRY_ACCESS_CONTROL_ALLOW_HEADERS: "origin,content-type,accept,authorization"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
       interval: 10s
