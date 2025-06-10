@@ -1,32 +1,134 @@
 [
-  {
-    "type": "record",
-    "name": "CloudEventEnvelope",
-    "namespace": "com.example",
-    "fields": [
-      { "name": "id", "type": "string" },
-      { "name": "source", "type": "string" },
-      { "name": "type", "type": "string" },
-      { "name": "subject", "type": "string" },
-      { "name": "time", "type": "string" },
-      { "name": "clientid", "type": "string" },
-      { "name": "topic", "type": "string" },
-      {
-        "name": "data",
-        "type": [
-            "null",
-            {
-                "type": "record",
-                "name": "PersonWorker",
-                "namespace": "com.example",
-                "fields": [
-                    { "name": "firstName", "type": "string" },
-                    { "name": "lastName", "type": "string" }
-                ]
+    {
+        "type": "record",
+        "name": "CloudEventEnvelope",
+        "namespace": "com.example",
+        "doc": "A Cloud Event Envelope that can support any type of data",
+        "team": "Data Platform Team",
+        "validationRules": {
+            "id": {
+                "required": true,
+                "notEmpty": true,
+                "minLength": 5,
+                "maxLength": 100,
+                "pattern": "^[a-zA-Z0-9-_]+$"
+            },
+            "source": {
+                "required": true,
+                "notEmpty": true,
+                "allowedValues": ["user-service", "order-service", "inventory-service", "notification-service"],
+                "format": "alphanumeric"
+            },
+            "type": {
+                "required": true,
+                "pattern": "^com\\.example\\.[A-Za-z]+\\.(Created|Updated|Deleted)$"
+            },
+            "subject": {
+                "required": true,
+                "notEmpty": true,
+                "minLength": 10,
+                "maxLength": 200
+            },
+            "time": {
+                "required": true,
+                "format": "datetime"
+            },
+            "clientid": {
+                "required": true,
+                "format": "uuid"
+            },
+            "topic": {
+                "required": true,
+                "allowedValues": ["person-worker-events", "order-events", "inventory-events"],
+                "minLength": 5,
+                "maxLength": 50
+            },
+            "data": {
+                "notNullAllowed": false,
+                "recordType": "PersonWorker",
+                "fields": {
+                    "uuid": {
+                        "type": "string",
+                        "doc": "Must be a 16-byte UUID"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "required": true,
+                        "notEmpty": true,
+                        "minLength": 2,
+                        "maxLength": 50,
+                        "pattern": "^[a-zA-Z\\s'-]+$"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "required": true,
+                        "notEmpty": true,
+                        "minLength": 2,
+                        "maxLength": 50,
+                        "pattern": "^[a-zA-Z\\s'-]+$"
+                    },
+                    "age": {
+                        "type": "int",
+                        "min": 18,
+                        "max": 65,
+                        "doc": "Must be between 18 and 65"
+                    },
+                    "status": {
+                        "type": "string",
+                        "default": "active",
+                        "allowedValues": ["active", "inactive", "pending"]
+                    },
+                    "email": {
+                        "type": ["null", "string"],
+                        "format": "email",
+                        "nullable": true,
+                        "doc": "Must match email format"
+                    },
+                    "sex": {
+                        "type": "enum",
+                        "symbols": ["MALE", "FEMALE", "OTHER"],
+                        "required": true,
+                        "doc": "Must be one of: MALE, FEMALE, OTHER"
+                    },
+                    "birthdate": {
+                        "type": "string",
+                        "doc": "Must be a valid date"
+                    }
+                }
             }
-        ],
-        "default": null
-      }
-    ]
-  }
+        },
+        "fields": [
+            { "name": "id", "type": "string" },
+            { "name": "source", "type": "string" },
+            { "name": "type", "type": "string" },
+            { "name": "subject", "type": "string" },
+            { "name": "time", "type": "string" },
+            { "name": "clientid", "type": "string" },
+            { "name": "topic", "type": "string" },
+            {
+                "name": "data",
+                "type": [
+                    "null",
+                    {
+                        "type": "record",
+                        "name": "PersonWorker",
+                        "namespace": "com.example",
+                        "doc": "A description of the PersonWorker model",
+                        "fields": [
+                            { "name": "uuid", "type": "string", "doc": "UUID as string (e.g., 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')" },
+                            { "name": "firstName", "type": "string", "doc": "First name of the person" },
+                            { "name": "lastName", "type": "string", "doc": "Last name of the person" },
+                            { "name": "age", "type": "int", "doc": "Age of person" },
+                            { "name": "status", "type": "string", "default": "active", "doc": "Account status, defaults to 'active'" },
+                            { "name": "email", "type": ["null", "string"], "default": null, "doc": "Email address (nullable)" },
+                            { "name": "sex", "type": { "type": "enum", "name": "Sex", "symbols": ["MALE", "FEMALE", "OTHER"] }, "doc": "Biological sex or gender identity" },
+                            { "name": "birthdate", "type": "string", "doc": "Birth date as string" }
+                        ]
+                    }
+                ],
+                "default": null,
+                "doc": "A description of the data model being published to kafka"
+            }
+        ]
+    }
 ]
