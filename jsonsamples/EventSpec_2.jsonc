@@ -2,8 +2,8 @@
     // CloudEvent Default Props
     "specversion": "1.0",
     "id": "84a10ef0-8702-4a5b-a5fc-99a1ebb8c7fd", // unique id for the message
-    "source": "/<env>/<producer-service>/<container-id>", // a URI for an internal source. Can be a string combining env prefix (dev, prod, stage), name of the producer service, and may be the container id
-    "type": "PERSON_CREATED", // PERSON_UPDATED, PERSON_DELETED etc
+    "source": "/<env>/<producer-service>/<container-id>", // for observability and lineage tracking. Can be a string combining env prefix (dev, prod, stage), name of the producer service, and may be the container id
+    "type": "com.example.person.created", // com.example.person.updated, com.example.person.deleted etc
     "datacontenttype": "application/avro",
     "time": "2025-06-02T14:48:09.085936-05:00", // timestamp of when the producer created it
 
@@ -15,7 +15,7 @@
     "sourceplatform": "Workday", // Workday, TBA, CBA etc
     "sourceplaformid": "aaa111", // Platform internal id from current UDP schema
     "globalid": "abc123", // gupi in case of person domain. Only needed if this id is available. Can be skipped otherwise.
-    "clientId": "00095", // a tenant id, an internal client
+    "clientId": "00095", // a tenant id, an internal client, can be used for partitioning data
 
     // Message Content
     "data": {
