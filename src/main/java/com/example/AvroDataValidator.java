@@ -163,7 +163,8 @@ public class AvroDataValidator {
             case "date":
                 return value.matches("^\\d{4}-\\d{2}-\\d{2}$");
             case "datetime":
-                return value.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(.\\d{3})?Z?$");
+                // Updated to handle ISO 8601 datetime formats including timezone offsets
+                return value.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,6})?([+-]\\d{2}:\\d{2}|Z)?$");
             case "alphanumeric":
                 return value.matches("^[a-zA-Z0-9]+$");
             case "numeric":
@@ -175,9 +176,62 @@ public class AvroDataValidator {
     }
     
     private static boolean validateCustomRule(Object value, String customType, Object ruleValue) {
-        // This method can be extended for custom validation logic
-        // For now, we'll just log and pass
-        System.out.println("Custom validation rule not implemented: " + customType);
-        return true;
+        // Extended custom validation for CloudEvent-specific rules
+        switch (customType.toLowerCase()) {
+            case "cloudevent_source":
+                // Validate CloudEvent source format: /<env>/<service>/<container-id>
+                if (value instanceof CharSequence) {
+                    String source = value.toString();
+                    return source.matches("^/[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+$");
+                }
+                break;
+                
+            case "cloudevent_type":
+                // Validate CloudEvent type format: com.example.domain.action
+                if (value instanceof CharSequence) {
+                    String type = value.toString();
+                    return type.matches("^com\\.example\\.[a-zA-Z]+\\.(created|updated|deleted)$");
+                }
+                break;
+                
+            case "client_id_format":
+                // Validate 5-digit client ID format
+                if (value instanceof CharSequence) {
+                    String clientId = value.toString();
+                    return clientId.matches("^[0-9]{5}$");
+                }
+                break;
+                
+            case "platform_identifier":
+                // Validate platform identifier format
+                if (value instanceof CharSequence) {
+                    String platformId = value.toString();
+                    return platformId.matches("^[a-zA-Z0-9]{3,50}$");
+                }
+                break;
+                
+            case "person_name":
+                // Validate person name (letters, spaces, hyphens, apostrophes)
+                if (value instanceof CharSequence) {
+                    String name = value.toString();
+                    return name.matches("^[a-zA-Z\\s'.-]+$");
+                }
+                break;
+                
+            case "gupi_format":
+                // Validate Global Unique Person Identifier format
+                if (value instanceof CharSequence) {
+                    String gupi = value.toString();
+                    return gupi.matches("^[a-zA-Z0-9]{3,20}$");
+                }
+                break;
+                
+            default:
+                // Log unimplemented custom rules and pass validation
+                System.out.println("Custom validation rule not implemented: " + customType);
+                return true;
+        }
+        
+        return false; // If we got here, validation failed
     }
 }

@@ -1,9 +1,9 @@
 [
     {
         "type": "record",
-        "name": "CloudEventEnvelope",
+        "name": "CloudEvent",
         "namespace": "com.example",
-        "doc": "A Cloud Event Envelope that can support any type of data",
+        "doc": "CloudEvent in Avro format with validation rules",
         "team": "Data Platform Team",
         "validationRules": {
             "id": {
@@ -16,40 +16,48 @@
             "source": {
                 "required": true,
                 "notEmpty": true,
-                "allowedValues": ["user-service", "order-service", "inventory-service", "notification-service"],
-                "format": "alphanumeric"
+                "pattern": "^/[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+$"
             },
             "type": {
                 "required": true,
-                "pattern": "^com\\.example\\.[A-Za-z]+\\.(Created|Updated|Deleted)$"
+                "pattern": "^com\\.example\\.[a-zA-Z]+\\.(created|updated|deleted)$"
             },
-            "subject": {
+            "specversion": {
                 "required": true,
-                "notEmpty": true,
-                "minLength": 10,
-                "maxLength": 200
+                "allowedValues": ["1.0"]
+            },
+            "datacontenttype": {
+                "required": true,
+                "allowedValues": ["application/avro"]
             },
             "time": {
                 "required": true,
                 "format": "datetime"
             },
+            "sourceplatform": {
+                "required": true,
+                "allowedValues": ["Workday", "SAP", "Oracle", "Salesforce"]
+            },
+            "sourceplatformid": {
+                "required": true,
+                "notEmpty": true,
+                "minLength": 3,
+                "maxLength": 50
+            },
             "clientid": {
                 "required": true,
-                "format": "uuid"
-            },
-            "topic": {
-                "required": true,
-                "allowedValues": ["person-worker-events", "order-events", "inventory-events"],
-                "minLength": 5,
-                "maxLength": 50
+                "pattern": "^[0-9]{5}$"
             },
             "data": {
                 "notNullAllowed": false,
-                "recordType": "PersonWorker",
+                "recordType": "PersonWorkerData",
                 "fields": {
-                    "uuid": {
+                    "gupi": {
                         "type": "string",
-                        "doc": "Must be a 16-byte UUID"
+                        "required": true,
+                        "notEmpty": true,
+                        "minLength": 3,
+                        "maxLength": 20
                     },
                     "firstName": {
                         "type": "string",
@@ -67,67 +75,85 @@
                         "maxLength": 50,
                         "pattern": "^[a-zA-Z\\s'-]+$"
                     },
-                    "age": {
-                        "type": "int",
-                        "min": 18,
-                        "max": 65,
-                        "doc": "Must be between 18 and 65"
-                    },
-                    "status": {
-                        "type": "string",
-                        "default": "active",
-                        "allowedValues": ["active", "inactive", "pending"]
-                    },
-                    "email": {
+                    "middleName": {
                         "type": ["null", "string"],
-                        "format": "email",
-                        "nullable": true,
-                        "doc": "Must match email format"
+                        "maxLength": 50,
+                        "pattern": "^[a-zA-Z\\s'-]*$"
+                    },
+                    "suffix": {
+                        "type": ["null", "string"],
+                        "maxLength": 10,
+                        "allowedValues": ["Jr.", "Sr.", "II", "III", "IV", "V"]
+                    },
+                    "prefix": {
+                        "type": ["null", "string"],
+                        "maxLength": 10,
+                        "allowedValues": ["Mr.", "Mrs.", "Ms.", "Dr.", "Prof."]
+                    },
+                    "birthDate": {
+                        "type": "string",
+                        "required": true,
+                        "format": "date",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "deceasedDate": {
+                        "type": ["null", "string"],
+                        "format": "date",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
                     },
                     "sex": {
-                        "type": "enum",
-                        "symbols": ["MALE", "FEMALE", "OTHER"],
-                        "required": true,
-                        "doc": "Must be one of: MALE, FEMALE, OTHER"
-                    },
-                    "birthdate": {
                         "type": "string",
-                        "doc": "Must be a valid date"
+                        "required": true,
+                        "allowedValues": ["M", "F", "O"]
+                    },
+                    "legalName": {
+                        "type": ["null", "string"],
+                        "maxLength": 200,
+                        "pattern": "^[a-zA-Z\\s'.-]+$"
+                    },
+                    "maritalStatus": {
+                        "type": ["null", "string"],
+                        "allowedValues": ["Single", "Married", "Divorced", "Widowed", "Separated"]
                     }
                 }
             }
         },
         "fields": [
+            { "name": "specversion", "type": "string", "default": "1.0" },
             { "name": "id", "type": "string" },
             { "name": "source", "type": "string" },
             { "name": "type", "type": "string" },
-            { "name": "subject", "type": "string" },
+            { "name": "datacontenttype", "type": "string", "default": "application/avro" },
             { "name": "time", "type": "string" },
+            { "name": "sourceplatform", "type": "string" },
+            { "name": "sourceplatformid", "type": "string" },
             { "name": "clientid", "type": "string" },
-            { "name": "topic", "type": "string" },
             {
                 "name": "data",
                 "type": [
                     "null",
                     {
                         "type": "record",
-                        "name": "PersonWorker",
+                        "name": "PersonWorkerData",
                         "namespace": "com.example",
-                        "doc": "A description of the PersonWorker model",
+                        "doc": "PersonWorker data flattened into CloudEvent data field",
                         "fields": [
-                            { "name": "uuid", "type": "string", "doc": "UUID as string (e.g., 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')" },
+                            { "name": "gupi", "type": "string", "doc": "Global Unique Person Identifier" },
                             { "name": "firstName", "type": "string", "doc": "First name of the person" },
+                            { "name": "middleName", "type": ["null", "string"], "default": null, "doc": "Middle name of the person (optional)" },
                             { "name": "lastName", "type": "string", "doc": "Last name of the person" },
-                            { "name": "age", "type": "int", "doc": "Age of person" },
-                            { "name": "status", "type": "string", "default": "active", "doc": "Account status, defaults to 'active'" },
-                            { "name": "email", "type": ["null", "string"], "default": null, "doc": "Email address (nullable)" },
-                            { "name": "sex", "type": { "type": "enum", "name": "Sex", "symbols": ["MALE", "FEMALE", "OTHER"] }, "doc": "Biological sex or gender identity" },
-                            { "name": "birthdate", "type": "string", "doc": "Birth date as string" }
+                            { "name": "suffix", "type": ["null", "string"], "default": null, "doc": "Name suffix (Jr., Sr., etc.)" },
+                            { "name": "prefix", "type": ["null", "string"], "default": null, "doc": "Name prefix (Mr., Mrs., etc.)" },
+                            { "name": "birthDate", "type": "string", "doc": "Birth date in YYYY-MM-DD format" },
+                            { "name": "deceasedDate", "type": ["null", "string"], "default": null, "doc": "Deceased date in YYYY-MM-DD format (if applicable)" },
+                            { "name": "sex", "type": "string", "doc": "Sex: M, F, or O" },
+                            { "name": "legalName", "type": ["null", "string"], "default": null, "doc": "Full legal name" },
+                            { "name": "maritalStatus", "type": ["null", "string"], "default": null, "doc": "Marital status" }
                         ]
                     }
                 ],
                 "default": null,
-                "doc": "A description of the data model being published to kafka"
+                "doc": "The actual event data containing PersonWorker information"
             }
         ]
     }

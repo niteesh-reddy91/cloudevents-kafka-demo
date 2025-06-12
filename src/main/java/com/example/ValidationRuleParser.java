@@ -49,7 +49,7 @@ public class ValidationRuleParser {
                     // Handle special data field with nested structure
                     parseDataFieldRules(fieldRulesNode, rules);
                 } else {
-                    // Handle regular top-level fields (id, source, subject, etc.)
+                    // Handle regular top-level fields (specversion, id, source, type, etc.)
                     parseFieldRules(fieldName, fieldRulesNode, rules);
                 }
             });
@@ -80,6 +80,7 @@ public class ValidationRuleParser {
                 String fieldName = entry.getKey();
                 JsonNode fieldRule = entry.getValue();
                 
+                // For CloudEvent structure, data fields are accessed directly (data.gupi, data.firstName, etc.)
                 parseFieldRules("data." + fieldName, fieldRule, rules);
             });
         }
@@ -205,25 +206,83 @@ public class ValidationRuleParser {
                     String fieldName = entry.getKey();
                     JsonNode fieldRulesNode = entry.getValue();
                     
-                    Map<String, Object> fieldRules = new HashMap<>();
-                    fieldRulesNode.fields().forEachRemaining(ruleEntry -> {
-                        String ruleName = ruleEntry.getKey();
-                        JsonNode ruleValue = ruleEntry.getValue();
+                    if ("data".equals(fieldName)) {
+                        // Handle data field specially - flatten the nested structure
+                        Map<String, Object> dataRules = new HashMap<>();
                         
-                        if (ruleValue.isBoolean()) {
-                            fieldRules.put(ruleName, ruleValue.asBoolean());
-                        } else if (ruleValue.isInt()) {
-                            fieldRules.put(ruleName, ruleValue.asInt());
-                        } else if (ruleValue.isArray()) {
-                            List<String> values = new ArrayList<>();
-                            ruleValue.forEach(val -> values.add(val.asText()));
-                            fieldRules.put(ruleName, values);
-                        } else {
-                            fieldRules.put(ruleName, ruleValue.asText());
+                        // Add top-level data rules
+                        fieldRulesNode.fields().forEachRemaining(dataRuleEntry -> {
+                            String dataRuleName = dataRuleEntry.getKey();
+                            JsonNode dataRuleValue = dataRuleEntry.getValue();
+                            
+                            if (!"fields".equals(dataRuleName)) {
+                                // Add non-field rules directly
+                                if (dataRuleValue.isBoolean()) {
+                                    dataRules.put(dataRuleName, dataRuleValue.asBoolean());
+                                } else if (dataRuleValue.isInt()) {
+                                    dataRules.put(dataRuleName, dataRuleValue.asInt());
+                                } else if (dataRuleValue.isArray()) {
+                                    List<String> values = new ArrayList<>();
+                                    dataRuleValue.forEach(val -> values.add(val.asText()));
+                                    dataRules.put(dataRuleName, values);
+                                } else {
+                                    dataRules.put(dataRuleName, dataRuleValue.asText());
+                                }
+                            }
+                        });
+                        
+                        rules.put(fieldName, dataRules);
+                        
+                        // Add individual data field rules as separate entries
+                        if (fieldRulesNode.has("fields")) {
+                            JsonNode fieldsNode = fieldRulesNode.get("fields");
+                            fieldsNode.fields().forEachRemaining(fieldEntry -> {
+                                String dataFieldName = fieldEntry.getKey();
+                                JsonNode dataFieldRules = fieldEntry.getValue();
+                                
+                                Map<String, Object> fieldRules = new HashMap<>();
+                                dataFieldRules.fields().forEachRemaining(ruleEntry -> {
+                                    String ruleName = ruleEntry.getKey();
+                                    JsonNode ruleValue = ruleEntry.getValue();
+                                    
+                                    if (ruleValue.isBoolean()) {
+                                        fieldRules.put(ruleName, ruleValue.asBoolean());
+                                    } else if (ruleValue.isInt()) {
+                                        fieldRules.put(ruleName, ruleValue.asInt());
+                                    } else if (ruleValue.isArray()) {
+                                        List<String> values = new ArrayList<>();
+                                        ruleValue.forEach(val -> values.add(val.asText()));
+                                        fieldRules.put(ruleName, values);
+                                    } else {
+                                        fieldRules.put(ruleName, ruleValue.asText());
+                                    }
+                                });
+                                
+                                rules.put("data." + dataFieldName, fieldRules);
+                            });
                         }
-                    });
-                    
-                    rules.put(fieldName, fieldRules);
+                    } else {
+                        // Handle regular CloudEvent fields (specversion, id, source, type, etc.)
+                        Map<String, Object> fieldRules = new HashMap<>();
+                        fieldRulesNode.fields().forEachRemaining(ruleEntry -> {
+                            String ruleName = ruleEntry.getKey();
+                            JsonNode ruleValue = ruleEntry.getValue();
+                            
+                            if (ruleValue.isBoolean()) {
+                                fieldRules.put(ruleName, ruleValue.asBoolean());
+                            } else if (ruleValue.isInt()) {
+                                fieldRules.put(ruleName, ruleValue.asInt());
+                            } else if (ruleValue.isArray()) {
+                                List<String> values = new ArrayList<>();
+                                ruleValue.forEach(val -> values.add(val.asText()));
+                                fieldRules.put(ruleName, values);
+                            } else {
+                                fieldRules.put(ruleName, ruleValue.asText());
+                            }
+                        });
+                        
+                        rules.put(fieldName, fieldRules);
+                    }
                 });
             }
         } catch (Exception e) {

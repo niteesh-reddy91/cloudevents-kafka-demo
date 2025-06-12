@@ -10,8 +10,8 @@ import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaMetadata;
 
-import com.example.CloudEventEnvelope;
-import com.example.PersonWorker;
+import com.example.CloudEvent;
+import com.example.PersonWorkerData;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -28,7 +28,7 @@ public class CloudEventConsumer {
     private static SchemaRegistryClient schemaRegistryClient;
 
     public static void main(String[] args) {
-        String topic = "demo-topic";
+        String topic = "person-worker-events";
         String schemaRegistryUrl = System.getenv().getOrDefault("SCHEMA_REGISTRY_URL", "http://localhost:8081");
 
         // Initialize Schema Registry client
@@ -51,41 +51,41 @@ public class CloudEventConsumer {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10);
 
-        System.out.println("Starting consumer with validation...");
+        System.out.println("Starting CloudEvent consumer with validation...");
         System.out.println("Bootstrap servers: " + props.get(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG));
         System.out.println("Schema Registry: " + props.get("schema.registry.url"));
-        System.out.println("Schema loaded from registry with validation rules");
+        System.out.println("CloudEvent schema loaded from registry with validation rules");
 
-        try (KafkaConsumer<String, CloudEventEnvelope> consumer = new KafkaConsumer<>(props)) {
+        try (KafkaConsumer<String, CloudEvent> consumer = new KafkaConsumer<>(props)) {
             consumer.subscribe(Collections.singletonList(topic));
             System.out.println("Subscribed to topic: " + topic);
             System.out.println("Waiting for CloudEvents on topic '" + topic + "'...");
 
             while (true) {
-                ConsumerRecords<String, CloudEventEnvelope> records = consumer.poll(Duration.ofMillis(1000));
+                ConsumerRecords<String, CloudEvent> records = consumer.poll(Duration.ofMillis(1000));
                 
                 if (records.isEmpty()) {
                     System.out.print(".");
                     continue;
                 }
 
-                System.out.println("\nReceived " + records.count() + " record(s)");
+                System.out.println("\nReceived " + records.count() + " CloudEvent(s)");
 
-                for (ConsumerRecord<String, CloudEventEnvelope> record : records) {
+                for (ConsumerRecord<String, CloudEvent> record : records) {
                     try {
                         System.out.println("\n" + "=".repeat(50));
-                        System.out.println("Processing record from partition " + record.partition() + ", offset " + record.offset());
+                        System.out.println("Processing CloudEvent from partition " + record.partition() + ", offset " + record.offset());
                         
-                        CloudEventEnvelope envelope = record.value();
+                        CloudEvent cloudEvent = record.value();
                         
                         // VALIDATE RECEIVED DATA USING SCHEMA REGISTRY SCHEMA
-                        System.out.println("Validating received data against Schema Registry rules...");
+                        System.out.println("Validating received CloudEvent against Schema Registry rules...");
                         try {
-                            GenericRecord envelopeRecord = convertToGenericRecord(envelope, schema);
-                            AvroDataValidator.validate(envelopeRecord, schema);
-                            System.out.println("Received data validation passed");
+                            GenericRecord cloudEventRecord = convertToGenericRecord(cloudEvent, schema);
+                            AvroDataValidator.validate(cloudEventRecord, schema);
+                            System.out.println("Received CloudEvent validation passed");
                         } catch (AvroDataValidator.ValidationException e) {
-                            System.err.println("Received data validation failed:");
+                            System.err.println("Received CloudEvent validation failed:");
                             for (String error : e.getErrors()) {
                                 System.err.println("  - " + error);
                             }
@@ -94,38 +94,40 @@ public class CloudEventConsumer {
                             continue; // Skip this record
                         }
                         
-                        // DESERIALIZE AND PRINT ENVELOPE DATA
-                        System.out.println("CloudEventEnvelope Details:");
-                        System.out.println("  ID: " + envelope.getId());
-                        System.out.println("  Type: " + envelope.getType());
-                        System.out.println("  Source: " + envelope.getSource());
-                        System.out.println("  Subject: " + envelope.getSubject());
-                        System.out.println("  Topic: " + envelope.getTopic());
-                        System.out.println("  Client ID: " + envelope.getClientid());
-                        System.out.println("  Time: " + envelope.getTime());
+                        // DESERIALIZE AND PRINT CLOUDEVENT DATA
+                        System.out.println("CloudEvent Details:");
+                        System.out.println("  Spec Version: " + cloudEvent.getSpecversion());
+                        System.out.println("  ID: " + cloudEvent.getId());
+                        System.out.println("  Type: " + cloudEvent.getType());
+                        System.out.println("  Source: " + cloudEvent.getSource());
+                        System.out.println("  Data Content Type: " + cloudEvent.getDatacontenttype());
+                        System.out.println("  Time: " + cloudEvent.getTime());
+                        System.out.println("  Source Platform: " + cloudEvent.getSourceplatform());
+                        System.out.println("  Source Platform ID: " + cloudEvent.getSourceplatformid());
+                        System.out.println("  Client ID: " + cloudEvent.getClientid());
 
-                        // ROUTE BASED ON TOPIC AND TYPE
-                        String topicName = envelope.getTopic();
-                        String eventType = envelope.getType();
-                        String clientId = envelope.getClientid();
+                        // ROUTE BASED ON TYPE AND SOURCE PLATFORM
+                        String eventType = cloudEvent.getType();
+                        String sourcePlatform = cloudEvent.getSourceplatform();
+                        String clientId = cloudEvent.getClientid();
 
-                        System.out.println("Routing based on topic: " + topicName + " and type: " + eventType);
+                        System.out.println("Routing based on type: " + eventType + " and source platform: " + sourcePlatform);
 
-                        if (isPersonWorkerEvent(topicName, eventType)) {
-                            processPersonWorkerEvent(envelope, clientId);
-                        } else if (isOrderEvent(topicName, eventType)) {
-                            processOrderEvent(envelope, clientId);
-                        } else if (isInventoryEvent(topicName, eventType)) {
-                            processInventoryEvent(envelope, clientId);
+                        if (isPersonWorkerEvent(eventType)) {
+                            processPersonWorkerEvent(cloudEvent, clientId);
+                        } else if (isOrderEvent(eventType)) {
+                            processOrderEvent(cloudEvent, clientId);
+                        } else if (isInventoryEvent(eventType)) {
+                            processInventoryEvent(cloudEvent, clientId);
                         } else {
-                            System.out.printf("Unhandled event - Topic: %s, Type: %s%n", topicName, eventType);
-                            logUnhandledEvent(envelope);
+                            System.out.printf("Unhandled event - Type: %s, Source Platform: %s%n", eventType, sourcePlatform);
+                            logUnhandledEvent(cloudEvent);
                         }
 
-                        System.out.println("Record processed successfully");
+                        System.out.println("CloudEvent processed successfully");
 
                     } catch (Exception e) {
-                        System.err.println("Error processing CloudEventEnvelope: " + e.getMessage());
+                        System.err.println("Error processing CloudEvent: " + e.getMessage());
                         e.printStackTrace();
                         // In production, you might want to send to dead letter queue
                     }
@@ -142,105 +144,110 @@ public class CloudEventConsumer {
     }
 
     /**
-     * Load schema from Schema Registry instead of local file
+     * Load CloudEvent schema from Schema Registry instead of local file
      */
     private static Schema loadSchemaFromRegistry(String topic, String schemaRegistryUrl) {
         try {
             String subject = topic + "-value";
-            System.out.println("Fetching latest schema from Schema Registry for subject: " + subject);
+            System.out.println("Fetching latest CloudEvent schema from Schema Registry for subject: " + subject);
             
             var latestSchema = schemaRegistryClient.getLatestSchemaMetadata(subject);
             System.out.println("Found schema version: " + latestSchema.getVersion() + ", ID: " + latestSchema.getId());
             
             Schema registrySchema = new Schema.Parser().parse(latestSchema.getSchema());
             
+            // Verify this is a CloudEvent schema
+            if (!"CloudEvent".equals(registrySchema.getName())) {
+                throw new RuntimeException("Expected CloudEvent schema but got: " + registrySchema.getName());
+            }
+            
             // Verify validation rules are present
             ValidationRuleParser ruleParser = new ValidationRuleParser();
             Map<String, Object> validationRules = ruleParser.extractValidationRules(registrySchema);
             
             if (!validationRules.isEmpty()) {
-                System.out.println("Validation rules found in Schema Registry schema");
+                System.out.println("Validation rules found in CloudEvent schema");
                 System.out.println("Available validation rules for fields: " + validationRules.keySet());
             } else {
-                System.out.println("Warning: No validation rules found in Schema Registry schema");
+                System.out.println("Warning: No validation rules found in CloudEvent schema");
             }
             
             return registrySchema;
             
         } catch (Exception e) {
-            System.err.println("Failed to load schema from Schema Registry: " + e.getMessage());
+            System.err.println("Failed to load CloudEvent schema from Schema Registry: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Cannot continue without schema", e);
+            throw new RuntimeException("Cannot continue without CloudEvent schema", e);
         }
     }
 
     /**
      * Check if this is a PersonWorker related event
      */
-    private static boolean isPersonWorkerEvent(String topic, String eventType) {
-        return ("person-worker-events".equals(topic) || 
-                "personworker".equals(topic) ||
-                "Person_Update".equals(topic)) &&
-               (eventType.contains("PersonWorker") || eventType.contains("Person"));
+    private static boolean isPersonWorkerEvent(String eventType) {
+        return eventType.contains("person") || eventType.contains("PersonWorker");
     }
 
     /**
      * Check if this is an Order related event
      */
-    private static boolean isOrderEvent(String topic, String eventType) {
-        return "order-events".equals(topic) && eventType.contains("Order");
+    private static boolean isOrderEvent(String eventType) {
+        return eventType.contains("order") || eventType.contains("Order");
     }
 
     /**
      * Check if this is an Inventory related event
      */
-    private static boolean isInventoryEvent(String topic, String eventType) {
-        return "inventory-events".equals(topic) && eventType.contains("Inventory");
+    private static boolean isInventoryEvent(String eventType) {
+        return eventType.contains("inventory") || eventType.contains("Inventory");
     }
 
     /**
      * Process PersonWorker events
      */
-    private static void processPersonWorkerEvent(CloudEventEnvelope envelope, String clientId) {
-        System.out.println("Processing PersonWorker Event...");
+    private static void processPersonWorkerEvent(CloudEvent cloudEvent, String clientId) {
+        System.out.println("Processing PersonWorker CloudEvent...");
         
-        Object data = envelope.getData();
+        Object data = cloudEvent.getData();
         System.out.println("  Data type: " + (data != null ? data.getClass().getSimpleName() : "null"));
         
-        if (data instanceof PersonWorker) {
-            PersonWorker person = (PersonWorker) data;
+        if (data instanceof PersonWorkerData) {
+            PersonWorkerData personData = (PersonWorkerData) data;
             
-            System.out.println("  PersonWorker Details:");
-            System.out.println("    UUID: " + person.getUuid());
-            System.out.println("    First Name: " + person.getFirstName());
-            System.out.println("    Last Name: " + person.getLastName());
-            System.out.println("    Age: " + person.getAge());
-            System.out.println("    Email: " + person.getEmail());
-            System.out.println("    Status: " + person.getStatus());
-            System.out.println("    Sex: " + person.getSex());
-            System.out.println("    Birthdate: " + person.getBirthdate());
+            System.out.println("  PersonWorker Data Details:");
+            System.out.println("    GUPI: " + personData.getGupi());
+            System.out.println("    First Name: " + personData.getFirstName());
+            System.out.println("    Middle Name: " + personData.getMiddleName());
+            System.out.println("    Last Name: " + personData.getLastName());
+            System.out.println("    Prefix: " + personData.getPrefix());
+            System.out.println("    Suffix: " + personData.getSuffix());
+            System.out.println("    Birth Date: " + personData.getBirthDate());
+            System.out.println("    Deceased Date: " + personData.getDeceasedDate());
+            System.out.println("    Sex: " + personData.getSex());
+            System.out.println("    Legal Name: " + personData.getLegalName());
+            System.out.println("    Marital Status: " + personData.getMaritalStatus());
 
             // Additional business logic validation
-            if (person.getFirstName() == null || person.getFirstName().trim().isEmpty() ||
-                person.getLastName() == null || person.getLastName().trim().isEmpty()) {
+            if (personData.getFirstName() == null || personData.getFirstName().trim().isEmpty() ||
+                personData.getLastName() == null || personData.getLastName().trim().isEmpty()) {
                 System.err.println("Business validation failed: PersonWorker data is incomplete");
                 return;
             }
 
             // Route based on event type
-            String eventType = envelope.getType();
-            if (eventType.contains("Created")) {
-                handlePersonWorkerCreated(person, envelope, clientId);
-            } else if (eventType.contains("Updated")) {
-                handlePersonWorkerUpdated(person, envelope, clientId);
-            } else if (eventType.contains("Deleted")) {
-                handlePersonWorkerDeleted(person, envelope, clientId);
+            String eventType = cloudEvent.getType();
+            if (eventType.contains("created")) {
+                handlePersonWorkerCreated(personData, cloudEvent, clientId);
+            } else if (eventType.contains("updated")) {
+                handlePersonWorkerUpdated(personData, cloudEvent, clientId);
+            } else if (eventType.contains("deleted")) {
+                handlePersonWorkerDeleted(personData, cloudEvent, clientId);
             } else {
                 System.out.println("Unknown PersonWorker event type: " + eventType);
             }
             
         } else {
-            System.err.println("Expected PersonWorker data but got: " + 
+            System.err.println("Expected PersonWorkerData but got: " + 
                 (data != null ? data.getClass().getName() : "null"));
         }
     }
@@ -248,17 +255,18 @@ public class CloudEventConsumer {
     /**
      * Handle PersonWorker Created events
      */
-    private static void handlePersonWorkerCreated(PersonWorker person, CloudEventEnvelope envelope, String clientId) {
+    private static void handlePersonWorkerCreated(PersonWorkerData personData, CloudEvent cloudEvent, String clientId) {
         System.out.println("Handling PersonWorker CREATED event");
-        System.out.printf("Client %s: Creating new person %s %s (UUID: %s)%n", 
-            clientId, person.getFirstName(), person.getLastName(), person.getUuid());
+        System.out.printf("Client %s: Creating new person %s %s (GUPI: %s)%n", 
+            clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
         
         // Business logic for creation
         System.out.println("Validating business rules for new person...");
-        if (person.getAge() != 0 && (person.getAge() < 18 || person.getAge() > 65)) {
-            System.err.println("Business rule violation: Age must be between 18 and 65");
-            return;
-        }
+        
+        // Extract platform-specific information
+        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatformId = cloudEvent.getSourceplatformid();
+        System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
         System.out.println("Saving new person to database...");
         System.out.println("Sending welcome email...");
@@ -269,10 +277,15 @@ public class CloudEventConsumer {
     /**
      * Handle PersonWorker Updated events
      */
-    private static void handlePersonWorkerUpdated(PersonWorker person, CloudEventEnvelope envelope, String clientId) {
+    private static void handlePersonWorkerUpdated(PersonWorkerData personData, CloudEvent cloudEvent, String clientId) {
         System.out.println("Handling PersonWorker UPDATED event");
-        System.out.printf("Client %s: Updating person %s %s (UUID: %s)%n", 
-            clientId, person.getFirstName(), person.getLastName(), person.getUuid());
+        System.out.printf("Client %s: Updating person %s %s (GUPI: %s)%n", 
+            clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
+        
+        // Extract platform-specific information
+        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatformId = cloudEvent.getSourceplatformid();
+        System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
         System.out.println("Updating person record in database...");
         System.out.println("Triggering change notifications...");
@@ -283,10 +296,15 @@ public class CloudEventConsumer {
     /**
      * Handle PersonWorker Deleted events
      */
-    private static void handlePersonWorkerDeleted(PersonWorker person, CloudEventEnvelope envelope, String clientId) {
+    private static void handlePersonWorkerDeleted(PersonWorkerData personData, CloudEvent cloudEvent, String clientId) {
         System.out.println("Handling PersonWorker DELETED event");
-        System.out.printf("Client %s: Deleting person %s %s (UUID: %s)%n", 
-            clientId, person.getFirstName(), person.getLastName(), person.getUuid());
+        System.out.printf("Client %s: Deleting person %s %s (GUPI: %s)%n", 
+            clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
+        
+        // Extract platform-specific information
+        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatformId = cloudEvent.getSourceplatformid();
+        System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
         System.out.println("Soft deleting person record...");
         System.out.println("Archiving related data...");
@@ -297,52 +315,58 @@ public class CloudEventConsumer {
     /**
      * Process Order events (placeholder for future implementation)
      */
-    private static void processOrderEvent(CloudEventEnvelope envelope, String clientId) {
-        System.out.println("Processing Order Event...");
+    private static void processOrderEvent(CloudEvent cloudEvent, String clientId) {
+        System.out.println("Processing Order CloudEvent...");
         System.out.printf("Client %s: Order event received but not yet implemented%n", clientId);
+        System.out.println("Event Type: " + cloudEvent.getType());
+        System.out.println("Source Platform: " + cloudEvent.getSourceplatform());
         // TODO: Implement order event processing
     }
 
     /**
      * Process Inventory events (placeholder for future implementation)
      */
-    private static void processInventoryEvent(CloudEventEnvelope envelope, String clientId) {
-        System.out.println("Processing Inventory Event...");
+    private static void processInventoryEvent(CloudEvent cloudEvent, String clientId) {
+        System.out.println("Processing Inventory CloudEvent...");
         System.out.printf("Client %s: Inventory event received but not yet implemented%n", clientId);
+        System.out.println("Event Type: " + cloudEvent.getType());
+        System.out.println("Source Platform: " + cloudEvent.getSourceplatform());
         // TODO: Implement inventory event processing
     }
 
     /**
      * Log unhandled events for monitoring and debugging
      */
-    private static void logUnhandledEvent(CloudEventEnvelope envelope) {
-        System.out.println("Logging unhandled event details:");
-        System.out.println("  Topic: " + envelope.getTopic());
-        System.out.println("  Type: " + envelope.getType());
-        System.out.println("  Source: " + envelope.getSource());
-        System.out.println("  Subject: " + envelope.getSubject());
-        System.out.println("  Client ID: " + envelope.getClientid());
+    private static void logUnhandledEvent(CloudEvent cloudEvent) {
+        System.out.println("Logging unhandled CloudEvent details:");
+        System.out.println("  Type: " + cloudEvent.getType());
+        System.out.println("  Source: " + cloudEvent.getSource());
+        System.out.println("  Source Platform: " + cloudEvent.getSourceplatform());
+        System.out.println("  Source Platform ID: " + cloudEvent.getSourceplatformid());
+        System.out.println("  Client ID: " + cloudEvent.getClientid());
+        System.out.println("  Spec Version: " + cloudEvent.getSpecversion());
         // In production, you might send this to a monitoring system or dead letter queue
     }
 
     /**
-     * Convert CloudEventEnvelope to GenericRecord for validation using Avro built-in conversion
-     * Updated to use the same approach as the producer
+     * Convert CloudEvent to GenericRecord for validation
      */
-    private static GenericRecord convertToGenericRecord(CloudEventEnvelope envelope, Schema schema) {
+    private static GenericRecord convertToGenericRecord(CloudEvent cloudEvent, Schema schema) {
         GenericRecordBuilder builder = new GenericRecordBuilder(schema);
         
-        // Set envelope-level fields
-        builder.set("id", envelope.getId());
-        builder.set("source", envelope.getSource());
-        builder.set("type", envelope.getType());
-        builder.set("subject", envelope.getSubject());
-        builder.set("time", envelope.getTime());
-        builder.set("clientid", envelope.getClientid());
-        builder.set("topic", envelope.getTopic());
+        // Set CloudEvent fields
+        builder.set("specversion", cloudEvent.getSpecversion());
+        builder.set("id", cloudEvent.getId());
+        builder.set("source", cloudEvent.getSource());
+        builder.set("type", cloudEvent.getType());
+        builder.set("datacontenttype", cloudEvent.getDatacontenttype());
+        builder.set("time", cloudEvent.getTime());
+        builder.set("sourceplatform", cloudEvent.getSourceplatform());
+        builder.set("sourceplatformid", cloudEvent.getSourceplatformid());
+        builder.set("clientid", cloudEvent.getClientid());
         
-        // Convert data field using the same logic as the producer
-        if (envelope.getData() != null) {
+        // Convert data field
+        if (cloudEvent.getData() != null) {
             Schema dataFieldSchema = schema.getField("data").schema();
             
             // Handle union type for data field (null or specific record type)
@@ -359,7 +383,7 @@ public class CloudEventConsumer {
             }
             
             if (recordSchema != null) {
-                GenericRecord dataRecord = convertDataToGenericRecord(envelope.getData(), recordSchema);
+                GenericRecord dataRecord = convertDataToGenericRecord(cloudEvent.getData(), recordSchema);
                 builder.set("data", dataRecord);
             }
         }
@@ -368,8 +392,7 @@ public class CloudEventConsumer {
     }
 
     /**
-     * Generic method to convert any domain object to GenericRecord using Avro built-in conversion
-     * This is the same method as in the producer for consistency
+     * Convert data object to GenericRecord for validation
      */
     private static GenericRecord convertDataToGenericRecord(Object data, Schema schema) {
         GenericRecordBuilder builder = new GenericRecordBuilder(schema);
@@ -418,44 +441,52 @@ public class CloudEventConsumer {
                 }
                 
             } else {
-                // Fallback for non-Avro objects (though this shouldn't happen in your use case)
-                throw new IllegalArgumentException("Expected SpecificRecord but got: " + data.getClass().getName());
+                // Fallback to manual mapping for known types
+                if (data instanceof PersonWorkerData) {
+                    PersonWorkerData personData = (PersonWorkerData) data;
+                    
+                    // Map all fields that exist in the schema
+                    if (schema.getField("gupi") != null) {
+                        builder.set("gupi", personData.getGupi());
+                    }
+                    if (schema.getField("firstName") != null) {
+                        builder.set("firstName", personData.getFirstName());
+                    }
+                    if (schema.getField("middleName") != null) {
+                        builder.set("middleName", personData.getMiddleName());
+                    }
+                    if (schema.getField("lastName") != null) {
+                        builder.set("lastName", personData.getLastName());
+                    }
+                    if (schema.getField("suffix") != null) {
+                        builder.set("suffix", personData.getSuffix());
+                    }
+                    if (schema.getField("prefix") != null) {
+                        builder.set("prefix", personData.getPrefix());
+                    }
+                    if (schema.getField("birthDate") != null) {
+                        builder.set("birthDate", personData.getBirthDate());
+                    }
+                    if (schema.getField("deceasedDate") != null) {
+                        builder.set("deceasedDate", personData.getDeceasedDate());
+                    }
+                    if (schema.getField("sex") != null) {
+                        builder.set("sex", personData.getSex());
+                    }
+                    if (schema.getField("legalName") != null) {
+                        builder.set("legalName", personData.getLegalName());
+                    }
+                    if (schema.getField("maritalStatus") != null) {
+                        builder.set("maritalStatus", personData.getMaritalStatus());
+                    }
+                } else {
+                    throw new RuntimeException("Unsupported data type for conversion: " + data.getClass().getName());
+                }
             }
             
         } catch (Exception e) {
-            // Final fallback to manual mapping for known types
-            if (data instanceof PersonWorker) {
-                PersonWorker person = (PersonWorker) data;
-                
-                // Map all fields that exist in the schema
-                if (schema.getField("uuid") != null) {
-                    builder.set("uuid", person.getUuid());
-                }
-                if (schema.getField("firstName") != null) {
-                    builder.set("firstName", person.getFirstName());
-                }
-                if (schema.getField("lastName") != null) {
-                    builder.set("lastName", person.getLastName());
-                }
-                if (schema.getField("age") != null) {
-                    builder.set("age", person.getAge());
-                }
-                if (schema.getField("email") != null) {
-                    builder.set("email", person.getEmail());
-                }
-                if (schema.getField("status") != null) {
-                    builder.set("status", person.getStatus());
-                }
-                if (schema.getField("sex") != null && person.getSex() != null) {
-                    builder.set("sex", person.getSex().toString());
-                }
-                if (schema.getField("birthdate") != null) {
-                    builder.set("birthdate", person.getBirthdate());
-                }
-            } else {
-                throw new RuntimeException("Failed to convert data to GenericRecord. Data type: " + 
-                    data.getClass().getName() + ", Schema: " + schema.getName(), e);
-            }
+            throw new RuntimeException("Failed to convert data to GenericRecord. Data type: " + 
+                data.getClass().getName() + ", Schema: " + schema.getName(), e);
         }
         
         return builder.build();
