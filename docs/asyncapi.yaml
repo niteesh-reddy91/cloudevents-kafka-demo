@@ -7,7 +7,7 @@ info:
   version: 2.0.0
   description: |
     Event-driven API using Kafka with CloudEvents and Avro serialization for PersonWorker domain.
-    Uses CloudEventEnvelope structure with comprehensive validation rules and Schema Registry integration.
+    Uses CloudEvent structure with comprehensive validation rules and Schema Registry integration.
     Supports PersonWorker lifecycle events (Created, Updated, Deleted) with custom validation logic.
   contact:
     name: Data Platform Team
@@ -37,27 +37,11 @@ servers:
 
 # Channels represent your Kafka topics
 channels:
-  demo-topic:
-    address: demo-topic
-    description: |
-      Main topic for PersonWorker lifecycle events. Handles creation, updates, and deletion 
-      of PersonWorker entities using CloudEventEnvelope structure with Avro serialization.
-    messages:
-      personWorkerEvent:
-        $ref: '#/components/messages/personWorkerEvent'
-    bindings:
-      kafka:
-        partitions: 3
-        replicas: 1
-        topicConfiguration:
-          cleanup.policy: ["delete"]
-          retention.ms: 604800000
-
   person-worker-events:
     address: person-worker-events
     description: |
-      Dedicated topic for PersonWorker events. Used in CloudEventEnvelope.topic field 
-      for routing and validation purposes.
+      Main topic for PersonWorker lifecycle events. Handles creation, updates, and deletion 
+      of PersonWorker entities using CloudEvent structure with Avro serialization.
     messages:
       personWorkerEvent:
         $ref: '#/components/messages/personWorkerEvent'
@@ -83,7 +67,7 @@ operations:
   publishPersonWorkerCreated:
     action: send
     channel:
-      $ref: '#/channels/demo-topic'
+      $ref: '#/channels/person-worker-events'
     summary: Producer publishes PersonWorker creation events
     description: |
       **Service**: App.java (Producer Service)
@@ -95,10 +79,11 @@ operations:
       - User registration process completes
       
       **Data Flow**:
-      1. Producer validates PersonWorker data against Avro schema validation rules
-      2. Creates CloudEvent envelope with type "com.example.PersonWorker.Created"
-      3. Serializes using Avro and publishes to demo-topic
-      4. Message is routed to person-worker-events for downstream processing
+      1. Producer validates PersonWorker data against comprehensive Avro schema validation rules
+      2. Creates CloudEvent envelope with type "com.example.person.created"
+      3. Serializes using Avro built-in serialization (not Jackson)
+      4. Auto-registers/updates schema in Schema Registry
+      5. Publishes to person-worker-events for downstream processing
       
       **SLA**: Messages published within 100ms of data validation
       **Error Handling**: Invalid data is rejected before publishing
@@ -111,14 +96,14 @@ operations:
           type: string  
           const: "producer-group"
     messages:
-      - $ref: '#/channels/demo-topic/messages/personWorkerEvent'
+      - $ref: '#/channels/person-worker-events/messages/personWorkerEvent'
     traits:
       - $ref: '#/components/operationTraits/cloudEventPublisher'
 
   publishPersonWorkerUpdated:
     action: send
     channel:
-      $ref: '#/channels/demo-topic'
+      $ref: '#/channels/person-worker-events'
     summary: Producer publishes PersonWorker update events
     description: |
       **Service**: App.java (Producer Service)
@@ -147,14 +132,14 @@ operations:
           type: string  
           const: "producer-group"
     messages:
-      - $ref: '#/channels/demo-topic/messages/personWorkerEvent'
+      - $ref: '#/channels/person-worker-events/messages/personWorkerEvent'
     traits:
       - $ref: '#/components/operationTraits/cloudEventPublisher'
 
   publishPersonWorkerDeleted:
     action: send
     channel:
-      $ref: '#/channels/demo-topic'
+      $ref: '#/channels/person-worker-events'
     summary: Producer publishes PersonWorker deletion events
     description: |
       **Service**: App.java (Producer Service)
@@ -180,7 +165,7 @@ operations:
           type: string  
           const: "producer-group"
     messages:
-      - $ref: '#/channels/demo-topic/messages/personWorkerEvent'
+      - $ref: '#/channels/person-worker-events/messages/personWorkerEvent'
     traits:
       - $ref: '#/components/operationTraits/cloudEventPublisher'
 
@@ -188,7 +173,7 @@ operations:
   processPersonWorkerEvents:
     action: receive
     channel:
-      $ref: '#/channels/demo-topic'
+      $ref: '#/channels/person-worker-events'
     summary: HR System processes PersonWorker lifecycle events
     description: |
       **Service**: HR Management System (Consumer)
@@ -199,8 +184,9 @@ operations:
       - Updated: Updates master records, validates changes, triggers dependent system updates
       - Deleted: Archives employee data, terminates access, updates payroll systems
       
+      **Validation**: Real-time validation using Schema Registry CloudEvent schema
       **SLA**: Process events within 30 seconds
-      **Error Handling**: Dead letter queue for processing failures
+      **Error Handling**: Dead letter queue for processing and validation failures
       **Idempotency**: Uses CloudEvent ID to prevent duplicate processing
     bindings:
       kafka:
@@ -211,14 +197,14 @@ operations:
           type: string
           const: "hr-processing-group"
     messages:
-      - $ref: '#/channels/demo-topic/messages/personWorkerEvent'
+      - $ref: '#/channels/person-worker-events/messages/personWorkerEvent'
     traits:
       - $ref: '#/components/operationTraits/cloudEventConsumer'
 
   syncPayrollSystem:
     action: receive
     channel:
-      $ref: '#/channels/demo-topic'
+      $ref: '#/channels/person-worker-events'
     summary: Payroll System syncs employee data
     description: |
       **Service**: Payroll Processing System (Consumer)
@@ -244,14 +230,14 @@ operations:
           type: string
           const: "payroll-sync-group"
     messages:
-      - $ref: '#/channels/demo-topic/messages/personWorkerEvent'
+      - $ref: '#/channels/person-worker-events/messages/personWorkerEvent'
     traits:
       - $ref: '#/components/operationTraits/cloudEventConsumer'
 
   updateAccessControl:
     action: receive
     channel:
-      $ref: '#/channels/demo-topic'
+      $ref: '#/channels/person-worker-events'
     summary: Access Control System manages employee permissions
     description: |
       **Service**: Identity & Access Management System (Consumer)
@@ -277,14 +263,14 @@ operations:
           type: string
           const: "access-management-group"
     messages:
-      - $ref: '#/channels/demo-topic/messages/personWorkerEvent'
+      - $ref: '#/channels/person-worker-events/messages/personWorkerEvent'
     traits:
       - $ref: '#/components/operationTraits/cloudEventConsumer'
 
   sendNotifications:
     action: receive
     channel:
-      $ref: '#/channels/demo-topic'
+      $ref: '#/channels/person-worker-events'
     summary: Notification Service sends employee communication
     description: |
       **Service**: Notification & Communication System (Consumer)
@@ -310,7 +296,7 @@ operations:
           type: string
           const: "notification-delivery-group"
     messages:
-      - $ref: '#/channels/demo-topic/messages/personWorkerEvent'
+      - $ref: '#/channels/person-worker-events/messages/personWorkerEvent'
     traits:
       - $ref: '#/components/operationTraits/cloudEventConsumer'
 
@@ -321,62 +307,26 @@ components:
     personWorkerEvent:
       name: PersonWorkerEvent
       title: PersonWorker Lifecycle Event
-      summary: CloudEventEnvelope containing PersonWorker data
+      summary: CloudEvent envelope containing PersonWorker data
       description: |
         A CloudEvent envelope containing PersonWorker lifecycle data (Created, Updated, Deleted).
-        Uses comprehensive validation rules for data integrity and follows CloudEvents specification.
+        Uses comprehensive validation rules defined in Avro schema for data integrity and follows CloudEvents specification.
         
         The envelope contains:
-        - CloudEvent metadata (id, source, type, subject, time, clientid)
-        - Topic routing information
-        - PersonWorker data with validation rules
+        - CloudEvent metadata (id, source, type, time, sourceplatform, sourceplatformid, clientid)
+        - PersonWorker data with extensive validation rules including:
+          * Required field validation (gupi, firstName, lastName, birthDate, sex)
+          * Pattern validation for names and identifiers
+          * Enumerated values for sex, maritalStatus, prefix, suffix
+          * Date format validation
+          * String length constraints
       contentType: application/octet-stream
       headers:
         $ref: '#/components/schemas/kafkaHeaders'
       payload:
         schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
         schema:
-          $ref: 'http://localhost:8081/subjects/demo-topic-value/versions/2/schema'
-      examples:
-        - name: PersonWorker Created Event
-          summary: Example of a PersonWorker creation event
-          payload:
-            id: "550e8400-e29b-41d4-a716-446655440000"
-            source: "user-service"
-            type: "com.example.PersonWorker.Created"
-            subject: "/example/udp/personworker"
-            time: "2025-06-10T10:30:00Z"
-            clientid: "550e8400-e29b-41d4-a716-446655440001"
-            topic: "person-worker-events"
-            data:
-              uuid: "550e8400-e29b-41d4-a716-446655440002"
-              firstName: "John"
-              lastName: "Doe"
-              age: 30
-              status: "active"
-              email: "john.doe@example.com"
-              sex: "MALE"
-              birthdate: "1993-06-09"
-        
-        - name: PersonWorker Updated Event
-          summary: Example of a PersonWorker update event
-          payload:
-            id: "550e8400-e29b-41d4-a716-446655440003"
-            source: "user-service"
-            type: "com.example.PersonWorker.Updated"
-            subject: "/example/udp/personworker"
-            time: "2025-06-10T11:15:00Z"
-            clientid: "550e8400-e29b-41d4-a716-446655440004"
-            topic: "person-worker-events"
-            data:
-              uuid: "550e8400-e29b-41d4-a716-446655440002"
-              firstName: "Jane"
-              lastName: "Smith"
-              age: 25
-              status: "active"
-              email: "jane.smith@example.com"
-              sex: "FEMALE"
-              birthdate: "1998-03-15"
+          $ref: '../src/main/avro/combined.avsc#/0'
 
   # Schema definitions
   schemas:
@@ -388,175 +338,6 @@ components:
           type: string
           description: Content type of the message
           example: "application/octet-stream"
-    
-    cloudEventEnvelope:
-      type: object
-      description: |
-        CloudEventEnvelope schema as defined in combined.avsc.
-        Contains CloudEvent metadata plus routing information.
-        
-        Note: This represents the logical structure. The actual Avro schema 
-        is registered in Schema Registry at demo-topic-value subject version 2.
-      properties:
-        id:
-          type: string
-          description: Unique identifier for the event
-          minLength: 5
-          maxLength: 100
-          pattern: "^[a-zA-Z0-9-_]+$"
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        source:
-          type: string
-          description: Source of the event
-          enum: ["user-service", "order-service", "inventory-service", "notification-service"]
-          example: "user-service"
-        type:
-          type: string
-          description: Type of event following specific pattern
-          pattern: "^com\\.example\\.[A-Za-z]+\\.(Created|Updated|Deleted)$"
-          example: "com.example.PersonWorker.Created"
-        subject:
-          type: string
-          description: Subject of the event
-          minLength: 10
-          maxLength: 200
-          example: "/example/udp/personworker"
-        time:
-          type: string
-          format: date-time
-          description: Timestamp when event occurred
-          example: "2025-06-10T10:30:00Z"
-        clientid:
-          type: string
-          format: uuid
-          description: Client identifier (UUID format)
-          example: "550e8400-e29b-41d4-a716-446655440001"
-        topic:
-          type: string
-          description: Kafka topic for routing
-          enum: ["person-worker-events", "order-events", "inventory-events"]
-          minLength: 5
-          maxLength: 50
-          example: "person-worker-events"
-        data:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/personWorker'
-          description: PersonWorker data (nullable)
-      required:
-        - id
-        - source
-        - type
-        - subject
-        - time
-        - clientid
-        - topic
-
-    personWorker:
-      type: object
-      description: |
-        PersonWorker data model with comprehensive validation rules.
-        Represents a person/worker entity in the system.
-      properties:
-        uuid:
-          type: string
-          format: uuid
-          description: UUID as string (16-byte UUID)
-          example: "550e8400-e29b-41d4-a716-446655440002"
-        firstName:
-          type: string
-          description: First name of the person
-          minLength: 2
-          maxLength: 50
-          pattern: "^[a-zA-Z\\s'-]+$"
-          example: "John"
-        lastName:
-          type: string
-          description: Last name of the person
-          minLength: 2
-          maxLength: 50
-          pattern: "^[a-zA-Z\\s'-]+$"
-          example: "Doe"
-        age:
-          type: integer
-          description: Age of person (must be between 18 and 65)
-          minimum: 18
-          maximum: 65
-          example: 30
-        status:
-          type: string
-          description: Account status
-          enum: ["active", "inactive", "pending"]
-          default: "active"
-          example: "active"
-        email:
-          type: string
-          format: email
-          description: Email address (nullable)
-          nullable: true
-          example: "john.doe@example.com"
-        sex:
-          type: string
-          description: Biological sex or gender identity
-          enum: ["MALE", "FEMALE", "OTHER"]
-          example: "MALE"
-        birthdate:
-          type: string
-          description: Birth date as string
-          example: "1993-06-09"
-      required:
-        - uuid
-        - firstName
-        - lastName
-        - age
-        - sex
-        - birthdate
-
-    validationRules:
-      type: object
-      description: |
-        Custom validation rules applied by the producer service.
-        These rules are extracted from the Avro schema and enforced before publishing.
-      properties:
-        schemaVersion:
-          type: string
-          description: Version of the schema used for validation
-          example: "2"
-        validationLevel:
-          type: string
-          enum: [strict, lenient]
-          description: Level of validation applied
-          default: "strict"
-        validatedFields:
-          type: array
-          description: List of fields that undergo validation
-          items:
-            type: string
-          example: ["id", "source", "type", "subject", "time", "clientid", "topic", "data"]
-        allowedSources:
-          type: array
-          description: Allowed values for source field
-          items:
-            type: string
-          example: ["user-service", "order-service", "inventory-service", "notification-service"]
-        allowedTopics:
-          type: array
-          description: Allowed values for topic field
-          items:
-            type: string
-          example: ["person-worker-events", "order-events", "inventory-events"]
-        avroSchemaLocation:
-          type: string
-          description: Location of the Avro schema file
-          example: "src/main/avro/combined.avsc"
-        schemaRegistrySubject:
-          type: string
-          description: Schema Registry subject name
-          example: "demo-topic-value"
-        schemaRegistryVersion:
-          type: integer
-          description: Schema Registry version
-          example: 2
 
   # Operation traits for reusable patterns
   operationTraits:
@@ -569,6 +350,7 @@ components:
         - Retry configuration for reliability
         - Compression enabled for efficiency
         - All acknowledgments required for durability
+        - Avro schema validation rules enforced before publishing
       summary: CloudEvent publisher operation pattern
     
     cloudEventConsumer:
@@ -580,4 +362,6 @@ components:
         - Manual commit for exactly-once processing
         - Appropriate session timeout for reliability
         - Batched processing for efficiency
+        - Schema Registry validation on message consumption
+        - Dead letter queue handling for validation failures
       summary: CloudEvent consumer operation pattern
