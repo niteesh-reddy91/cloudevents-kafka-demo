@@ -65,6 +65,8 @@ springdoc:
 # SpringWolf AsyncAPI configuration
 springwolf:
   enabled: true
+  publisher:
+    enabled: true
   docket:
     info:
       title: "CloudEvents PersonWorker Event API"

@@ -20,15 +20,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.LocalDate;
-import com.example.SourcePlatform;
-import com.example.Sex;
-import com.example.NameSuffix;
-import com.example.NamePrefix;
-import com.example.MaritalStatus;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -96,16 +88,7 @@ public class CloudEventService {
         bindingVersion = "${app.kafka.binding.version:0.5.0}",
         clientId = "${app.kafka.producer.client-id:${spring.application.name}-producer}"
     )
-    public String publishPersonWorkerCreated(@Payload PersonWorkerData personData, String clientId) throws Exception {
-        CloudEvent cloudEvent = createCloudEvent(
-            "com.example.person.created",
-            "/prod/user-service/container-123",
-            SourcePlatform.Workday,
-            "aaa111",
-            clientId,
-            personData
-        );
-        
+    public String publishPersonWorkerCreated(@Payload CloudEvent cloudEvent) throws Exception {
         return publishCloudEvent(cloudEvent);
     }
 
@@ -156,16 +139,7 @@ public class CloudEventService {
         bindingVersion = "${app.kafka.binding.version:0.5.0}",
         clientId = "${app.kafka.producer.client-id:${spring.application.name}-producer}"
     )
-    public String publishPersonWorkerUpdated(@Payload PersonWorkerData personData, String clientId) throws Exception {
-        CloudEvent cloudEvent = createCloudEvent(
-            "com.example.person.updated", 
-            "/prod/user-service/container-456",
-            SourcePlatform.SAP,
-            "bbb222",
-            clientId,
-            personData
-        );
-        
+    public String publishPersonWorkerUpdated(@Payload CloudEvent cloudEvent) throws Exception {
         return publishCloudEvent(cloudEvent);
     }
 
@@ -216,35 +190,10 @@ public class CloudEventService {
         bindingVersion = "0.5.0",
         clientId = "${app.kafka.producer.client-id:cloudevent-producer}"
     )
-    public String publishPersonWorkerDeleted(@Payload PersonWorkerData personData, String clientId) throws Exception {
-        CloudEvent cloudEvent = createCloudEvent(
-            "com.example.person.deleted",
-            "/prod/user-service/container-789", 
-            SourcePlatform.Oracle,
-            "ccc333",
-            clientId,
-            personData
-        );
-        
+    public String publishPersonWorkerDeleted(@Payload CloudEvent cloudEvent) throws Exception {
         return publishCloudEvent(cloudEvent);
     }
 
-    private CloudEvent createCloudEvent(String type, String source, SourcePlatform sourceplatform,
-                                      String sourceplatformid, String clientid, PersonWorkerData data) {
-        CloudEvent cloudEvent = new CloudEvent();
-        cloudEvent.setSpecversion("1.0");
-        cloudEvent.setId(UUID.randomUUID().toString());
-        cloudEvent.setSource(source);
-        cloudEvent.setType(type);
-        cloudEvent.setDatacontenttype("application/avro");
-        cloudEvent.setTime(OffsetDateTime.now().toString());
-        cloudEvent.setSourceplatform(sourceplatform);
-        cloudEvent.setSourceplatformid(sourceplatformid);
-        cloudEvent.setClientid(clientid);
-        cloudEvent.setData(data);
-        
-        return cloudEvent;
-    }
 
     private String publishCloudEvent(CloudEvent cloudEvent) throws Exception {
         // Validate before sending

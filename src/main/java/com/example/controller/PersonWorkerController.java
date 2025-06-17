@@ -3,6 +3,9 @@ package com.example.controller;
 import com.example.service.CloudEventService;
 import com.example.PersonWorkerData;
 import com.example.CloudEvent;
+import com.example.SourcePlatform;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -97,7 +100,15 @@ public class PersonWorkerController {
     public ResponseEntity<String> createPersonWorker(@Valid @RequestBody CreatePersonWorkerRequest request) {
         try {
             PersonWorkerData personData = mapToPersonWorkerData(request);
-            String eventId = cloudEventService.publishPersonWorkerCreated(personData, request.getClientId());
+            CloudEvent cloudEvent = createCloudEvent(
+                "com.example.person.created",
+                "/prod/user-service/container-123",
+                SourcePlatform.valueOf(request.getSourceplatform()),
+                request.getSourceplatformid(),
+                request.getClientId(),
+                personData
+            );
+            String eventId = cloudEventService.publishPersonWorkerCreated(cloudEvent);
             return ResponseEntity.ok("PersonWorker created successfully. Event ID: " + eventId);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to create PersonWorker: " + e.getMessage());
@@ -159,7 +170,15 @@ public class PersonWorkerController {
     public ResponseEntity<String> updatePersonWorker(@Valid @RequestBody UpdatePersonWorkerRequest request) {
         try {
             PersonWorkerData personData = mapToPersonWorkerData(request);
-            String eventId = cloudEventService.publishPersonWorkerUpdated(personData, request.getClientId());
+            CloudEvent cloudEvent = createCloudEvent(
+                "com.example.person.updated",
+                "/prod/user-service/container-456",
+                SourcePlatform.valueOf(request.getSourceplatform()),
+                request.getSourceplatformid(),
+                request.getClientId(),
+                personData
+            );
+            String eventId = cloudEventService.publishPersonWorkerUpdated(cloudEvent);
             return ResponseEntity.ok("PersonWorker updated successfully. Event ID: " + eventId);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to update PersonWorker: " + e.getMessage());
@@ -225,7 +244,15 @@ public class PersonWorkerController {
             personData.setFirstName(request.getFirstName());
             personData.setLastName(request.getLastName());
             
-            String eventId = cloudEventService.publishPersonWorkerDeleted(personData, request.getClientId());
+            CloudEvent cloudEvent = createCloudEvent(
+                "com.example.person.deleted",
+                "/prod/user-service/container-789",
+                SourcePlatform.valueOf(request.getSourceplatform()),
+                request.getSourceplatformid(),
+                request.getClientId(),
+                personData
+            );
+            String eventId = cloudEventService.publishPersonWorkerDeleted(cloudEvent);
             return ResponseEntity.ok("PersonWorker deleted successfully. Event ID: " + eventId);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to delete PersonWorker: " + e.getMessage());
@@ -246,6 +273,23 @@ public class PersonWorkerController {
         personData.setLegalName(request.getLegalName());
         personData.setMaritalStatus(request.getMaritalStatus() != null ? MaritalStatus.valueOf(request.getMaritalStatus()) : null);
         return personData;
+    }
+
+    private CloudEvent createCloudEvent(String type, String source, SourcePlatform sourceplatform,
+                                      String sourceplatformid, String clientid, PersonWorkerData data) {
+        CloudEvent cloudEvent = new CloudEvent();
+        cloudEvent.setSpecversion("1.0");
+        cloudEvent.setId(UUID.randomUUID().toString());
+        cloudEvent.setSource(source);
+        cloudEvent.setType(type);
+        cloudEvent.setDatacontenttype("application/avro");
+        cloudEvent.setTime(OffsetDateTime.now().toString());
+        cloudEvent.setSourceplatform(sourceplatform);
+        cloudEvent.setSourceplatformid(sourceplatformid);
+        cloudEvent.setClientid(clientid);
+        cloudEvent.setData(data);
+        
+        return cloudEvent;
     }
 
     // Base request class
