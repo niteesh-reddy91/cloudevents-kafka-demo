@@ -45,7 +45,46 @@ public class CloudEventService {
 
     @AsyncPublisher(operation = @AsyncOperation(
         channelName = "person-worker-events",
-        description = "Publishes a CloudEvent when a PersonWorker is created in the system"
+        description = "Publishes a CloudEvent when a PersonWorker is created in the system",
+        headers = @AsyncOperation.Headers(
+            schemaName = "CloudEventKafkaProducerHeaders", 
+            values = {
+                // CloudEvents Standard Headers
+                @AsyncOperation.Headers.Header(
+                    name = "ce-id", 
+                    description = "CloudEvent unique identifier"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-source", 
+                    description = "CloudEvent source URI" 
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-type", 
+                    description = "CloudEvent type"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-specversion", 
+                    description = "CloudEvent specification version"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-time", 
+                    description = "CloudEvent timestamp"
+                ),
+                // Custom CloudEvent Extensions
+                @AsyncOperation.Headers.Header(
+                    name = "ce-clientid", 
+                    description = "Client identifier for the event"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-sourceplatform", 
+                    description = "Source platform name"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-sourceplatformid", 
+                    description = "Source platform identifier"
+                )
+            }
+        )
     ))
     @KafkaAsyncOperationBinding(
         bindingVersion = "${app.kafka.binding.version:0.5.0}",
@@ -66,11 +105,50 @@ public class CloudEventService {
 
     @AsyncPublisher(operation = @AsyncOperation(
         channelName = "person-worker-events",
-        description = "Publishes a CloudEvent when a PersonWorker is updated in the system"
+        description = "Publishes a CloudEvent when a PersonWorker is updated in the system",
+        headers = @AsyncOperation.Headers(
+            schemaName = "CloudEventKafkaProducerHeaders", 
+            values = {
+                // CloudEvents Standard Headers
+                @AsyncOperation.Headers.Header(
+                    name = "ce-id", 
+                    description = "CloudEvent unique identifier"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-source", 
+                    description = "CloudEvent source URI" 
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-type", 
+                    description = "CloudEvent type"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-specversion", 
+                    description = "CloudEvent specification version"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-time", 
+                    description = "CloudEvent timestamp"
+                ),
+                // Custom CloudEvent Extensions
+                @AsyncOperation.Headers.Header(
+                    name = "ce-clientid", 
+                    description = "Client identifier for the event"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-sourceplatform", 
+                    description = "Source platform name"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-sourceplatformid", 
+                    description = "Source platform identifier"
+                )
+            }
+        )
     ))
     @KafkaAsyncOperationBinding(
-        bindingVersion = "0.5.0",
-        clientId = "${app.kafka.producer.client-id:cloudevent-producer}"
+        bindingVersion = "${app.kafka.binding.version:0.5.0}",
+        clientId = "${app.kafka.producer.client-id:${spring.application.name}-producer}"
     )
     public String publishPersonWorkerUpdated(@Payload PersonWorkerData personData, String clientId) throws Exception {
         CloudEvent cloudEvent = createCloudEvent(
@@ -87,7 +165,46 @@ public class CloudEventService {
 
     @AsyncPublisher(operation = @AsyncOperation(
         channelName = "person-worker-events",
-        description = "Publishes a CloudEvent when a PersonWorker is deleted from the system"
+        description = "Publishes a CloudEvent when a PersonWorker is deleted from the system",
+        headers = @AsyncOperation.Headers(
+            schemaName = "CloudEventKafkaProducerHeaders", 
+            values = {
+                // CloudEvents Standard Headers
+                @AsyncOperation.Headers.Header(
+                    name = "ce-id", 
+                    description = "CloudEvent unique identifier"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-source", 
+                    description = "CloudEvent source URI" 
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-type", 
+                    description = "CloudEvent type"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-specversion", 
+                    description = "CloudEvent specification version"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-time", 
+                    description = "CloudEvent timestamp"
+                ),
+                // Custom CloudEvent Extensions
+                @AsyncOperation.Headers.Header(
+                    name = "ce-clientid", 
+                    description = "Client identifier for the event"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-sourceplatform", 
+                    description = "Source platform name"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-sourceplatformid", 
+                    description = "Source platform identifier"
+                )
+            }
+        )
     ))
     @KafkaAsyncOperationBinding(
         bindingVersion = "0.5.0",

@@ -34,7 +34,58 @@ public class CloudEventKafkaListener {
 
     @AsyncListener(operation = @AsyncOperation(
         channelName = "person-worker-events",
-        description = "Handles CloudEvent messages for PersonWorker domain operations (create, update, delete). Includes Kafka headers: partition, offset, topic, timestamp, groupId"
+        description = "Handles CloudEvent messages for PersonWorker domain operations (create, update, delete). Includes Kafka headers: partition, offset, topic, timestamp, groupId",
+        headers = @AsyncOperation.Headers(
+            schemaName = "CloudEventKafkaConsumerHeaders",
+            values = {
+                // CloudEvents Standard Headers
+                @AsyncOperation.Headers.Header(
+                    name = "ce-id", 
+                    description = "CloudEvent unique identifier"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-source", 
+                    description = "CloudEvent source URI"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-type", 
+                    description = "CloudEvent type"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-specversion", 
+                    description = "CloudEvent specification version"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-time", 
+                    description = "CloudEvent timestamp"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "ce-datacontenttype", 
+                    description = "CloudEvent data content type"
+                ),
+                // Spring Kafka Headers
+                @AsyncOperation.Headers.Header(
+                    name = "__TypeId__", 
+                    description = "Spring type identifier for deserialization"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "kafka_offset", 
+                    description = "Kafka message offset in partition"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "kafka_receivedPartitionId", 
+                    description = "Kafka partition ID where message was received"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "kafka_receivedTopic", 
+                    description = "Kafka topic name"
+                ),
+                @AsyncOperation.Headers.Header(
+                    name = "kafka_receivedTimestamp", 
+                    description = "Kafka message timestamp"
+                )
+            }
+        )
     ))
     @KafkaAsyncOperationBinding(
         bindingVersion = "${app.kafka.binding.version:0.5.0}",
