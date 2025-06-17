@@ -37,9 +37,9 @@ public class CloudEventKafkaListener {
         description = "Handles CloudEvent messages for PersonWorker domain operations (create, update, delete). Includes Kafka headers: partition, offset, topic, timestamp, groupId"
     ))
     @KafkaAsyncOperationBinding(
-        bindingVersion = "0.5.0",
+        bindingVersion = "${app.kafka.binding.version:0.5.0}",
         groupId = "${app.kafka.consumer.group-id:cloudevents-consumer-group}",
-        clientId = "cloudevent-consumer"
+        clientId = "${app.kafka.consumer.client-id:${spring.application.name}-consumer}"
     )
     @KafkaListener(topics = "${app.kafka.topic.person-worker-events:person-worker-events}",
                    groupId = "${app.kafka.consumer.group-id:cloudevents-consumer-group}",

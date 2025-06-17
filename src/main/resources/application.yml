@@ -17,10 +17,27 @@ app:
       url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
     topic:
       person-worker-events: person-worker-events
+    binding:
+      version: "0.5.0"
     producer:
-      client-id: cloudevent-producer
+      client-id: "${spring.application.name}-producer"
+      acks: "all"
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      compression-type: "gzip"
+      enable-idempotence: true
+      max-in-flight-requests: 5
     consumer:
       group-id: cloudevents-consumer-group
+      client-id: "${spring.application.name}-consumer"
+      auto-offset-reset: "earliest"
+      fetch-min-bytes: 1024
+      fetch-max-wait: 500
+      enable-auto-commit: false
+      max-poll-records: 500
+      session-timeout-ms: 30000
+      heartbeat-interval-ms: 3000
 
 # Actuator endpoints
 management:

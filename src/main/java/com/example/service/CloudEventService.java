@@ -48,8 +48,8 @@ public class CloudEventService {
         description = "Publishes a CloudEvent when a PersonWorker is created in the system"
     ))
     @KafkaAsyncOperationBinding(
-        bindingVersion = "0.5.0",
-        clientId = "${app.kafka.producer.client-id:cloudevent-producer}"
+        bindingVersion = "${app.kafka.binding.version:0.5.0}",
+        clientId = "${app.kafka.producer.client-id:${spring.application.name}-producer}"
     )
     public String publishPersonWorkerCreated(@Payload PersonWorkerData personData, String clientId) throws Exception {
         CloudEvent cloudEvent = createCloudEvent(
