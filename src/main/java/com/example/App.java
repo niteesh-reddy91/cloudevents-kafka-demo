@@ -17,6 +17,12 @@ import java.time.OffsetDateTime;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.Map;
+import java.time.LocalDate;
+import com.example.NameSuffix;
+import com.example.NamePrefix;
+import com.example.Sex;
+import com.example.MaritalStatus;
+import com.example.SourcePlatform;
 
 public class App {
     private static final String AVRO_SCHEMA_FILE = "combined.avsc";
@@ -44,13 +50,13 @@ public class App {
         personData.setFirstName("John");
         personData.setMiddleName("Optional");
         personData.setLastName("Doe");
-        personData.setSuffix("Jr.");
-        personData.setPrefix("Mr.");
-        personData.setBirthDate("1970-01-01");
-        personData.setDeceasedDate("2020-01-01");
-        personData.setSex("M");
+        personData.setSuffix(NameSuffix.Jr);
+        personData.setPrefix(NamePrefix.Mr);
+        personData.setBirthDate(LocalDate.parse("1970-01-01"));
+        personData.setDeceasedDate(LocalDate.parse("2020-01-01"));
+        personData.setSex(Sex.M);
         personData.setLegalName("Mr. John O. Doe Jr.");
-        personData.setMaritalStatus("Single");
+        personData.setMaritalStatus(MaritalStatus.Single);
         
         // Create CloudEvent directly as Avro record
         CloudEvent cloudEvent = createCloudEventAvro(
@@ -92,7 +98,7 @@ public class App {
         cloudEvent.setType(type);
         cloudEvent.setDatacontenttype("application/avro");
         cloudEvent.setTime(OffsetDateTime.now().toString());
-        cloudEvent.setSourceplatform(sourceplatform);
+        cloudEvent.setSourceplatform(SourcePlatform.valueOf(sourceplatform));
         cloudEvent.setSourceplatformid(sourceplatformid);
         cloudEvent.setClientid(clientid);
         cloudEvent.setData(data);
@@ -112,7 +118,7 @@ public class App {
         cloudEvent.setType(type);
         cloudEvent.setDatacontenttype("application/avro");
         cloudEvent.setTime(OffsetDateTime.now().toString());
-        cloudEvent.setSourceplatform(sourceplatform);
+        cloudEvent.setSourceplatform(SourcePlatform.valueOf(sourceplatform));
         cloudEvent.setSourceplatformid(sourceplatformid);
         cloudEvent.setClientid(clientid);
         
@@ -385,9 +391,9 @@ public class App {
             personData.setGupi("xyz789");
             personData.setFirstName("Jane");
             personData.setLastName("Smith");
-            personData.setBirthDate("1985-03-15");
-            personData.setSex("F");
-            personData.setMaritalStatus("Married");
+            personData.setBirthDate(LocalDate.parse("1985-03-15"));
+            personData.setSex(Sex.F);
+            personData.setMaritalStatus(MaritalStatus.Married);
             
             CloudEvent personEvent = createCloudEventAvro(
                 "com.example.person.updated",

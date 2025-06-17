@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Map;
+import com.example.SourcePlatform;
 
 public class CloudEventConsumer {
 
@@ -108,7 +109,7 @@ public class CloudEventConsumer {
 
                         // ROUTE BASED ON TYPE AND SOURCE PLATFORM
                         String eventType = cloudEvent.getType();
-                        String sourcePlatform = cloudEvent.getSourceplatform();
+                        String sourcePlatform = cloudEvent.getSourceplatform().toString();
                         String clientId = cloudEvent.getClientid();
 
                         System.out.println("Routing based on type: " + eventType + " and source platform: " + sourcePlatform);
@@ -264,7 +265,7 @@ public class CloudEventConsumer {
         System.out.println("Validating business rules for new person...");
         
         // Extract platform-specific information
-        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatform = cloudEvent.getSourceplatform().toString();
         String sourcePlatformId = cloudEvent.getSourceplatformid();
         System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
@@ -283,7 +284,7 @@ public class CloudEventConsumer {
             clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
         
         // Extract platform-specific information
-        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatform = cloudEvent.getSourceplatform().toString();
         String sourcePlatformId = cloudEvent.getSourceplatformid();
         System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
@@ -302,7 +303,7 @@ public class CloudEventConsumer {
             clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
         
         // Extract platform-specific information
-        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatform = cloudEvent.getSourceplatform().toString();
         String sourcePlatformId = cloudEvent.getSourceplatformid();
         System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         

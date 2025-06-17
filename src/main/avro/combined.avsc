@@ -120,14 +120,22 @@
         },
         "fields": [
             { "name": "specversion", "type": "string", "default": "1.0" },
-            { "name": "id", "type": "string" },
-            { "name": "source", "type": "string" },
-            { "name": "type", "type": "string" },
+            { "name": "id", "type": "string", "default": "event-12345" },
+            { "name": "source", "type": "string", "default": "/prod/user-service/container-123" },
+            { "name": "type", "type": "string", "default": "com.example.person.created" },
             { "name": "datacontenttype", "type": "string", "default": "application/avro" },
-            { "name": "time", "type": "string" },
-            { "name": "sourceplatform", "type": "string" },
-            { "name": "sourceplatformid", "type": "string" },
-            { "name": "clientid", "type": "string" },
+            { "name": "time", "type": "string", "default": "2023-12-07T10:30:00Z" },
+            { 
+                "name": "sourceplatform", 
+                "type": {
+                    "type": "enum",
+                    "name": "SourcePlatform",
+                    "symbols": ["Workday", "SAP", "Oracle", "Salesforce"]
+                },
+                "default": "Workday"
+            },
+            { "name": "sourceplatformid", "type": "string", "default": "WD001" },
+            { "name": "clientid", "type": "string", "default": "12345" },
             {
                 "name": "data",
                 "type": [
@@ -138,17 +146,53 @@
                         "namespace": "com.example",
                         "doc": "PersonWorker data flattened into CloudEvent data field",
                         "fields": [
-                            { "name": "gupi", "type": "string", "doc": "Global Unique Person Identifier" },
-                            { "name": "firstName", "type": "string", "doc": "First name of the person" },
+                            { "name": "gupi", "type": "string", "doc": "Global Unique Person Identifier", "default": "EMP123456" },
+                            { "name": "firstName", "type": "string", "doc": "First name of the person", "default": "John" },
                             { "name": "middleName", "type": ["null", "string"], "default": null, "doc": "Middle name of the person (optional)" },
-                            { "name": "lastName", "type": "string", "doc": "Last name of the person" },
-                            { "name": "suffix", "type": ["null", "string"], "default": null, "doc": "Name suffix (Jr., Sr., etc.)" },
-                            { "name": "prefix", "type": ["null", "string"], "default": null, "doc": "Name prefix (Mr., Mrs., etc.)" },
-                            { "name": "birthDate", "type": "string", "doc": "Birth date in YYYY-MM-DD format" },
-                            { "name": "deceasedDate", "type": ["null", "string"], "default": null, "doc": "Deceased date in YYYY-MM-DD format (if applicable)" },
-                            { "name": "sex", "type": "string", "doc": "Sex: M, F, or O" },
+                            { "name": "lastName", "type": "string", "doc": "Last name of the person", "default": "Smith" },
+                            { 
+                                "name": "suffix", 
+                                "type": ["null", {
+                                    "type": "enum",
+                                    "name": "NameSuffix",
+                                    "symbols": ["Jr", "Sr", "II", "III", "IV", "V"]
+                                }], 
+                                "default": null, 
+                                "doc": "Name suffix (Jr., Sr., etc.)" 
+                            },
+                            { 
+                                "name": "prefix", 
+                                "type": ["null", {
+                                    "type": "enum",
+                                    "name": "NamePrefix", 
+                                    "symbols": ["Mr", "Mrs", "Ms", "Dr", "Prof"]
+                                }], 
+                                "default": null, 
+                                "doc": "Name prefix (Mr., Mrs., etc.)" 
+                            },
+                            { "name": "birthDate", "type": {"type": "int", "logicalType": "date"}, "doc": "Birth date as days since epoch", "default": 7305 },
+                            { "name": "deceasedDate", "type": ["null", {"type": "int", "logicalType": "date"}], "default": null, "doc": "Deceased date as days since epoch (if applicable)" },
+                            { 
+                                "name": "sex", 
+                                "type": {
+                                    "type": "enum",
+                                    "name": "Sex",
+                                    "symbols": ["M", "F", "O"]
+                                }, 
+                                "doc": "Sex: M, F, or O",
+                                "default": "M"
+                            },
                             { "name": "legalName", "type": ["null", "string"], "default": null, "doc": "Full legal name" },
-                            { "name": "maritalStatus", "type": ["null", "string"], "default": null, "doc": "Marital status" }
+                            { 
+                                "name": "maritalStatus", 
+                                "type": ["null", {
+                                    "type": "enum",
+                                    "name": "MaritalStatus",
+                                    "symbols": ["Single", "Married", "Divorced", "Widowed", "Separated"]
+                                }], 
+                                "default": null, 
+                                "doc": "Marital status" 
+                            }
                         ]
                     }
                 ],

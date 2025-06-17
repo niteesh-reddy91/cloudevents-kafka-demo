@@ -17,6 +17,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
+import com.example.NameSuffix;
+import com.example.NamePrefix;
+import com.example.Sex;
+import com.example.MaritalStatus;
 
 @RestController
 @RequestMapping("/api/person-worker")
@@ -233,13 +238,13 @@ public class PersonWorkerController {
         personData.setFirstName(request.getFirstName());
         personData.setMiddleName(request.getMiddleName());
         personData.setLastName(request.getLastName());
-        personData.setSuffix(request.getSuffix());
-        personData.setPrefix(request.getPrefix());
-        personData.setBirthDate(request.getBirthDate());
-        personData.setDeceasedDate(request.getDeceasedDate());
-        personData.setSex(request.getSex());
+        personData.setSuffix(request.getSuffix() != null ? NameSuffix.valueOf(request.getSuffix()) : null);
+        personData.setPrefix(request.getPrefix() != null ? NamePrefix.valueOf(request.getPrefix()) : null);
+        personData.setBirthDate(request.getBirthDate() != null ? LocalDate.parse(request.getBirthDate()) : null);
+        personData.setDeceasedDate(request.getDeceasedDate() != null ? LocalDate.parse(request.getDeceasedDate()) : null);
+        personData.setSex(request.getSex() != null ? Sex.valueOf(request.getSex()) : null);
         personData.setLegalName(request.getLegalName());
-        personData.setMaritalStatus(request.getMaritalStatus());
+        personData.setMaritalStatus(request.getMaritalStatus() != null ? MaritalStatus.valueOf(request.getMaritalStatus()) : null);
         return personData;
     }
 

@@ -21,6 +21,12 @@ import org.springframework.messaging.handler.annotation.Payload;
 import java.io.File;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import com.example.SourcePlatform;
+import com.example.Sex;
+import com.example.NameSuffix;
+import com.example.NamePrefix;
+import com.example.MaritalStatus;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -94,7 +100,7 @@ public class CloudEventService {
         CloudEvent cloudEvent = createCloudEvent(
             "com.example.person.created",
             "/prod/user-service/container-123",
-            "Workday",
+            SourcePlatform.Workday,
             "aaa111",
             clientId,
             personData
@@ -154,7 +160,7 @@ public class CloudEventService {
         CloudEvent cloudEvent = createCloudEvent(
             "com.example.person.updated", 
             "/prod/user-service/container-456",
-            "SAP",
+            SourcePlatform.SAP,
             "bbb222",
             clientId,
             personData
@@ -214,7 +220,7 @@ public class CloudEventService {
         CloudEvent cloudEvent = createCloudEvent(
             "com.example.person.deleted",
             "/prod/user-service/container-789", 
-            "Oracle",
+            SourcePlatform.Oracle,
             "ccc333",
             clientId,
             personData
@@ -223,7 +229,7 @@ public class CloudEventService {
         return publishCloudEvent(cloudEvent);
     }
 
-    private CloudEvent createCloudEvent(String type, String source, String sourceplatform,
+    private CloudEvent createCloudEvent(String type, String source, SourcePlatform sourceplatform,
                                       String sourceplatformid, String clientid, PersonWorkerData data) {
         CloudEvent cloudEvent = new CloudEvent();
         cloudEvent.setSpecversion("1.0");

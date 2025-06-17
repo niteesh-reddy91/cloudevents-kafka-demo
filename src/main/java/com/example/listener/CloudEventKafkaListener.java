@@ -20,6 +20,7 @@ import io.github.springwolf.bindings.kafka.annotations.KafkaAsyncOperationBindin
 import org.springframework.messaging.handler.annotation.Payload;
 
 import java.util.Map;
+import com.example.SourcePlatform;
 
 @Component
 public class CloudEventKafkaListener {
@@ -139,7 +140,7 @@ public class CloudEventKafkaListener {
 
             // ROUTE BASED ON TYPE AND SOURCE PLATFORM
             String eventType = cloudEvent.getType();
-            String sourcePlatform = cloudEvent.getSourceplatform();
+            String sourcePlatform = cloudEvent.getSourceplatform().toString();
             String clientId = cloudEvent.getClientid();
 
             System.out.println("Routing based on type: " + eventType + " and source platform: " + sourcePlatform);
@@ -268,7 +269,7 @@ public class CloudEventKafkaListener {
         System.out.printf("Client %s: Creating new person %s %s (GUPI: %s)%n", 
             clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
         
-        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatform = cloudEvent.getSourceplatform().toString();
         String sourcePlatformId = cloudEvent.getSourceplatformid();
         System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
@@ -283,7 +284,7 @@ public class CloudEventKafkaListener {
         System.out.printf("Client %s: Updating person %s %s (GUPI: %s)%n", 
             clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
         
-        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatform = cloudEvent.getSourceplatform().toString();
         String sourcePlatformId = cloudEvent.getSourceplatformid();
         System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
@@ -298,7 +299,7 @@ public class CloudEventKafkaListener {
         System.out.printf("Client %s: Deleting person %s %s (GUPI: %s)%n", 
             clientId, personData.getFirstName(), personData.getLastName(), personData.getGupi());
         
-        String sourcePlatform = cloudEvent.getSourceplatform();
+        String sourcePlatform = cloudEvent.getSourceplatform().toString();
         String sourcePlatformId = cloudEvent.getSourceplatformid();
         System.out.printf("Source: %s (Platform ID: %s)%n", sourcePlatform, sourcePlatformId);
         
