@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.github.springwolf.core.asyncapi.annotations.AsyncListener;
 import io.github.springwolf.core.asyncapi.annotations.AsyncOperation;
+import io.github.springwolf.bindings.kafka.annotations.KafkaAsyncOperationBinding;
 import org.springframework.messaging.handler.annotation.Payload;
 
 import java.util.Map;
@@ -35,6 +36,11 @@ public class CloudEventKafkaListener {
         channelName = "person-worker-events",
         description = "Handles CloudEvent messages for PersonWorker domain operations (create, update, delete). Includes Kafka headers: partition, offset, topic, timestamp, groupId"
     ))
+    @KafkaAsyncOperationBinding(
+        bindingVersion = "0.5.0",
+        groupId = "${app.kafka.consumer.group-id:cloudevents-consumer-group}",
+        clientId = "cloudevent-consumer"
+    )
     @KafkaListener(topics = "${app.kafka.topic.person-worker-events:person-worker-events}",
                    groupId = "${app.kafka.consumer.group-id:cloudevents-consumer-group}",
                    containerFactory = "kafkaListenerContainerFactory")

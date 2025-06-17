@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.github.springwolf.core.asyncapi.annotations.AsyncPublisher;
 import io.github.springwolf.core.asyncapi.annotations.AsyncOperation;
+import io.github.springwolf.bindings.kafka.annotations.KafkaAsyncOperationBinding;
 import org.springframework.messaging.handler.annotation.Payload;
 
 import java.io.File;
@@ -46,6 +47,10 @@ public class CloudEventService {
         channelName = "person-worker-events",
         description = "Publishes a CloudEvent when a PersonWorker is created in the system"
     ))
+    @KafkaAsyncOperationBinding(
+        bindingVersion = "0.5.0",
+        clientId = "${app.kafka.producer.client-id:cloudevent-producer}"
+    )
     public String publishPersonWorkerCreated(@Payload PersonWorkerData personData, String clientId) throws Exception {
         CloudEvent cloudEvent = createCloudEvent(
             "com.example.person.created",
@@ -63,6 +68,10 @@ public class CloudEventService {
         channelName = "person-worker-events",
         description = "Publishes a CloudEvent when a PersonWorker is updated in the system"
     ))
+    @KafkaAsyncOperationBinding(
+        bindingVersion = "0.5.0",
+        clientId = "${app.kafka.producer.client-id:cloudevent-producer}"
+    )
     public String publishPersonWorkerUpdated(@Payload PersonWorkerData personData, String clientId) throws Exception {
         CloudEvent cloudEvent = createCloudEvent(
             "com.example.person.updated", 
@@ -80,6 +89,10 @@ public class CloudEventService {
         channelName = "person-worker-events",
         description = "Publishes a CloudEvent when a PersonWorker is deleted from the system"
     ))
+    @KafkaAsyncOperationBinding(
+        bindingVersion = "0.5.0",
+        clientId = "${app.kafka.producer.client-id:cloudevent-producer}"
+    )
     public String publishPersonWorkerDeleted(@Payload PersonWorkerData personData, String clientId) throws Exception {
         CloudEvent cloudEvent = createCloudEvent(
             "com.example.person.deleted",

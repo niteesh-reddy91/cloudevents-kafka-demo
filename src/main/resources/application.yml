@@ -52,16 +52,31 @@ springwolf:
     info:
       title: "CloudEvents PersonWorker Event API"
       version: "1.0.0"
+      description: "Event-driven API using Kafka with CloudEvents and Avro serialization for PersonWorker domain"
     base-package: com.example
+    # Explicitly set AsyncAPI version for 3.0 support
+    asyncapi:
+      version: "3.0.0"
     servers:
       kafka:
         protocol: kafka
         host: ${app.kafka.bootstrap-servers:localhost:9092}
         description: "Kafka broker for CloudEvent message processing"
+        # Add Kafka-specific bindings
+        bindings:
+          kafka:
+            bindingVersion: "0.5.0"
+            schemaRegistryUrl: ${app.kafka.schema-registry.url:http://localhost:8081}
+            schemaRegistryVendor: "confluent"
       schema-registry:
         protocol: http
         host: ${app.kafka.schema-registry.url:http://localhost:8081}
         description: "Confluent Schema Registry for Avro schema management"
+    # Add channel configuration to bind channels to servers
+    channels:
+      person-worker-events:
+        servers:
+          - kafka
   scanner:
     async-listener:
       enabled: true
@@ -79,6 +94,9 @@ springwolf:
           value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
           properties:
             schema.registry.url: ${app.kafka.schema-registry.url:http://localhost:8081}
+  # Additional SpringWolf 1.14.0 configuration options
+  init-mode: FAIL_FAST
+  default-content-type: "application/avro"
 
 # Logging configuration
 logging:
