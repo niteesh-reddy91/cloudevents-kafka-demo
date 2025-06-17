@@ -1,0 +1,143 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: cloudevents-kafka-demo
+  profiles:
+    active: local
+
+# Custom application properties
+app:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    schema-registry:
+      url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+    topic:
+      person-worker-events: person-worker-events
+    producer:
+      client-id: cloudevent-producer
+    consumer:
+      group-id: cloudevents-consumer-group
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,kafka
+  endpoint:
+    health:
+      show-details: always
+  health:
+    kafka:
+      enabled: true
+
+# OpenAPI/Swagger configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    disable-swagger-default-url: true
+
+# SpringWolf AsyncAPI configuration
+springwolf:
+  enabled: true
+  docket:
+    info:
+      title: "CloudEvents PersonWorker Event API"
+      version: "1.0.0"
+    base-package: com.example
+    servers:
+      kafka:
+        protocol: kafka
+        host: ${app.kafka.bootstrap-servers:localhost:9092}
+        description: "Kafka broker for CloudEvent message processing"
+      schema-registry:
+        protocol: http
+        host: ${app.kafka.schema-registry.url:http://localhost:8081}
+        description: "Confluent Schema Registry for Avro schema management"
+  scanner:
+    async-listener:
+      enabled: true
+    async-publisher:
+      enabled: true
+  plugin:
+    kafka:
+      scanner:
+        enabled: true
+      publishing:
+        enabled: true
+        producer:
+          bootstrap-servers: ${app.kafka.bootstrap-servers:localhost:9092}
+          key-serializer: org.apache.kafka.common.serialization.StringSerializer
+          value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+          properties:
+            schema.registry.url: ${app.kafka.schema-registry.url:http://localhost:8081}
+
+# Logging configuration
+logging:
+  level:
+    com.example: INFO
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
+    io.confluent: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# Local development profile
+spring:
+  config:
+    activate:
+      on-profile: local
+
+app:
+  kafka:
+    bootstrap-servers: localhost:9092
+    schema-registry:
+      url: http://localhost:8081
+
+logging:
+  level:
+    com.example: DEBUG
+    org.springframework.kafka: DEBUG
+
+---
+# Docker development profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+app:
+  kafka:
+    bootstrap-servers: kafka:9092
+    schema-registry:
+      url: http://schema-registry:8081
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+app:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    schema-registry:
+      url: ${SCHEMA_REGISTRY_URL}
+
+logging:
+  level:
+    com.example: INFO
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    io.confluent: WARN
